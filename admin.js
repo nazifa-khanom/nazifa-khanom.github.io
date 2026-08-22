@@ -520,54 +520,95 @@ function safeFileName(name){
 }
 function uid(){return`${Date.now()}-${Math.random().toString(36).slice(2,9)}`}
 
+function withTimeout(promise,ms,message){
+  let timer;
+  const timeout=new Promise((_,reject)=>{
+    timer=setTimeout(()=>reject(new Error(message||"Operation timed out.")),ms);
+  });
+  return Promise.race([promise,timeout]).finally(()=>clearTimeout(timer));
+}
+
 async function uploadMedia(owner,editor){
   syncAllForms();
   const input=editor.querySelector("[data-media-file]");
+  const uploadBtn=editor.querySelector("[data-media-upload]");
+  if(uploadBtn?.disabled)return;
+
   const file=input?.files?.[0];
   if(!file)return setStatus("Choose a file first.");
   if(file.size>50*1024*1024)return setStatus("File is larger than 50 MB.");
   const type=fileType(file);
   if(!type)return setStatus("Allowed uploads: JPG, PNG, WebP, PDF, MP4 or WebM.");
 
-  setStatus(`Uploading ${file.name}...`);
-  const path=`${ownerFolder(owner)}/${uid()}-${safeFileName(file.name)}`;
-  const{error}=await sb.storage.from("site-media").upload(path,file,{
-    upsert:false,
-    contentType:file.type||undefined,
-    cacheControl:"3600"
-  });
-  if(error)return setStatus("Media upload failed: "+error.message);
-
-  const{data}=sb.storage.from("site-media").getPublicUrl(path);
-  const media=getOwnerMedia(owner);
-  const item={
-    id:uid(),
-    type,
-    url:data.publicUrl,
-    filename:file.name,
-    path,
-    title:file.name.replace(/\.[^.]+$/,""),
-    caption:"",
-    uploaded_at:new Date().toISOString()
-  };
-  media.push(item);
-
-  if(type==="pdf"){
-    setStatus("PDF uploaded. Creating first-page preview...");
-    try{
-      const blob=await createPdfPreviewBlob(await file.arrayBuffer());
-      await saveGeneratedPdfPreview(owner,item,blob);
-    }catch(err){
-      console.warn("Automatic PDF preview failed:",err);
-      setStatus("PDF uploaded. Automatic preview failed; you can generate or upload a preview manually.");
-    }
+  if(uploadBtn){
+    uploadBtn.disabled=true;
+    uploadBtn.dataset.oldText=uploadBtn.textContent;
+    uploadBtn.textContent="Uploading...";
   }
 
-  await persistContent(type==="pdf" && item.thumbnail_url
-    ? "PDF uploaded with preview."
-    : "Media uploaded.");
-  input.value="";
-  fillForms();
+  try{
+    setStatus(`Uploading ${file.name}...`);
+    const path=`${ownerFolder(owner)}/${uid()}-${safeFileName(file.name)}`;
+    const{error}=await sb.storage.from("site-media").upload(path,file,{
+      upsert:false,
+      contentType:file.type||undefined,
+      cacheControl:"3600"
+    });
+    if(error)throw new Error(error.message);
+
+    const{data}=sb.storage.from("site-media").getPublicUrl(path);
+    const media=getOwnerMedia(owner);
+    const item={
+      id:uid(),
+      type,
+      url:data.publicUrl,
+      filename:file.name,
+      path,
+      title:file.name.replace(/\.[^.]+$/,""),
+      caption:"",
+      uploaded_at:new Date().toISOString()
+    };
+    media.push(item);
+
+    // Save the uploaded file immediately. PDF thumbnail creation must never
+    // block the attachment itself from being saved.
+    const saved=await persistContent(type==="pdf"
+      ? "PDF uploaded. Creating first-page preview..."
+      : "Media uploaded.");
+    if(!saved)throw new Error("The file uploaded, but its website record could not be saved.");
+
+    if(type==="pdf"){
+      try{
+        const buffer=await file.arrayBuffer();
+        const blob=await withTimeout(
+          createPdfPreviewBlob(buffer),
+          15000,
+          "PDF preview generation timed out."
+        );
+        await withTimeout(
+          saveGeneratedPdfPreview(owner,item,blob),
+          15000,
+          "PDF preview upload timed out."
+        );
+        await persistContent("PDF uploaded with preview.");
+      }catch(err){
+        console.warn("Automatic PDF preview failed:",err);
+        setStatus("PDF uploaded successfully. Automatic preview failed; use Generate preview automatically or Upload manually.");
+      }
+    }
+
+    input.value="";
+    fillForms();
+  }catch(err){
+    console.error(err);
+    setStatus("Media upload failed: "+(err?.message||err));
+  }finally{
+    if(uploadBtn){
+      uploadBtn.disabled=false;
+      uploadBtn.textContent=uploadBtn.dataset.oldText||"Upload file";
+      delete uploadBtn.dataset.oldText;
+    }
+  }
 }
 
 async function addMediaLink(owner,editor){
@@ -750,7 +791,7 @@ async function persistContent(successMessage){
 $("removeCvBtn").addEventListener("click",async()=>{
   if(!confirm("Remove the current CV from your public website?"))return;
   $("saveStatus").textContent="Removing CV...";
-  try{await sb.storage.from("cv-files").remove(["Ibtida_Yasin_CV.pdf"])}catch{}
+  try{await sb.storage.from("cv-files").remove(["Nazifa_Khanom_CV.pdf"])}catch{}
   currentContent.cv={url:"",filename:"",updated_at:""};
   const ok=await persistContent("CV removed.");
   if(ok)renderCvState();
@@ -777,7 +818,7 @@ async function saveAll(){
   if(cvFile){
     if(cvFile.size>10*1024*1024)return setStatus("CV is larger than 10 MB.");
     if(cvFile.type!=="application/pdf"&&!cvFile.name.toLowerCase().endsWith(".pdf"))return setStatus("CV must be a PDF.");
-    const path="Ibtida_Yasin_CV.pdf";
+    const path="Nazifa_Khanom_CV.pdf";
     const{error}=await sb.storage.from("cv-files").upload(path,cvFile,{upsert:true,contentType:"application/pdf",cacheControl:"3600"});
     if(error)return setStatus("CV upload failed: "+error.message);
     const{data}=sb.storage.from("cv-files").getPublicUrl(path);
