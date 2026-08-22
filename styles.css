@@ -912,3 +912,74 @@ html[data-theme="crimson-cream"]{
   --header-bg:rgba(255,249,238,.97);--media-bg:#faecef;--portrait-a:#d54a60;--portrait-b:#7f0c20;
   --shadow:0 12px 30px rgba(166,17,43,.10);
 }
+
+/* =========================================================
+   Nazifa public-site typography — slightly larger
+   Keeps admin typography unchanged
+   ========================================================= */
+body:not(.admin-body){
+  font-size:16.5px;
+}
+
+body:not(.admin-body) .sidebar h1{
+  font-size:32px;
+}
+
+body:not(.admin-body) .role{
+  font-size:16px;
+}
+
+body:not(.admin-body) .small{
+  font-size:14.5px;
+}
+
+body:not(.admin-body) .meta p{
+  font-size:13.5px;
+}
+
+body:not(.admin-body) .links a,
+body:not(.admin-body) .profile-icon-link{
+  font-size:14.5px;
+}
+
+body:not(.admin-body) h2{
+  font-size:clamp(36px,5vw,51px);
+}
+
+body:not(.admin-body) h3{
+  font-size:20.5px;
+}
+
+body:not(.admin-body) .lead{
+  font-size:19px;
+}
+
+body:not(.admin-body) .pub-meta,
+body:not(.admin-body) .text-link{
+  font-size:13.5px;
+}
+
+body:not(.admin-body) .card p{
+  font-size:14.5px;
+}
+
+body:not(.admin-body) .contact-item a,
+body:not(.admin-body) .contact-item strong{
+  font-size:14.5px;
+}
+
+body:not(.admin-body) footer{
+  font-size:13.5px;
+}
+
+@media(max-width:680px){
+  body:not(.admin-body){
+    font-size:16px;
+  }
+  body:not(.admin-body) .sidebar h1{
+    font-size:31px;
+  }
+  body:not(.admin-body) h2{
+    font-size:clamp(34px,9vw,46px);
+  }
+}
