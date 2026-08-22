@@ -494,13 +494,43 @@ function readMediaMetadata(){
 }
 
 function getOwnerMedia(owner){
-  if(owner==="profile")return currentContent.sectionMedia.profile;
-  if(owner==="research")return currentContent.featuredResearch.media;
-  if(owner==="contact")return currentContent.contact.media;
-  const[type,idxs]=owner.split(":");const i=Number(idxs);
+  if(owner==="profile"){
+    currentContent.sectionMedia=currentContent.sectionMedia||{};
+    currentContent.sectionMedia.profile=currentContent.sectionMedia.profile||[];
+    return currentContent.sectionMedia.profile;
+  }
+  if(owner==="research"){
+    currentContent.featuredResearch=currentContent.featuredResearch||{title:"",description:"",tags:[],media:[]};
+    currentContent.featuredResearch.media=currentContent.featuredResearch.media||[];
+    return currentContent.featuredResearch.media;
+  }
+  if(owner==="contact"){
+    currentContent.contact=currentContent.contact||{headline:"",message:"",email:"",phone:"",location:"",media:[]};
+    currentContent.contact.media=currentContent.contact.media||[];
+    return currentContent.contact.media;
+  }
+
+  const[type,idxs]=owner.split(":");
+  const i=Number(idxs);
   const map={publication:"publications",project:"projects",skill:"skills",education:"education"};
-  const arr=currentContent[map[type]];
-  return arr?.[i]?.media;
+  const key=map[type];
+  if(!key)return [];
+
+  currentContent[key]=currentContent[key]||[];
+
+  const blankFactories={
+    publication:()=>({title:"",authors:"",venue:"",year:"",status:"",doi:"",url:"",description:"",media:[]}),
+    project:()=>({title:"",description:"",meta:"",url:"",media:[]}),
+    skill:()=>({category:"",items:[],media:[]}),
+    education:()=>({period:"",degree:"",institution:"",description:"",media:[]})
+  };
+
+  while(currentContent[key].length<=i){
+    currentContent[key].push(blankFactories[type]());
+  }
+
+  currentContent[key][i].media=currentContent[key][i].media||[];
+  return currentContent[key][i].media;
 }
 function ownerFolder(owner){
   if(owner==="profile")return "profile";
