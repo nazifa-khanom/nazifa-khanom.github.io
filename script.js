@@ -659,9 +659,14 @@ function render(d){
   $("aboutBio").textContent=d.aboutBio;
 
   if(d.photo_url){
-    $("profilePhoto").src=d.photo_url;$("profilePhoto").classList.remove("hidden");$("initials").classList.add("hidden");
+    $("profilePhoto").src=d.photo_url;
+    $("profilePhoto").classList.remove("hidden");
+    $("initials").classList.add("hidden");
+    document.querySelector(".portrait")?.classList.add("has-photo");
   }else{
-    $("profilePhoto").classList.add("hidden");$("initials").classList.remove("hidden");
+    $("profilePhoto").classList.add("hidden");
+    $("initials").classList.remove("hidden");
+    document.querySelector(".portrait")?.classList.remove("has-photo");
   }
 
   $("profileMedia").innerHTML=mediaHtml(d.sectionMedia?.profile||[]);
