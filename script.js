@@ -784,7 +784,7 @@ function render(d){
 
   setPublicSection("about","aboutSectionTitle","aboutHeadline");
   setPublicSection("research","researchSectionTitle","researchSectionSubtitle","navResearch");
-  setPublicSection("thesis","thesisSectionTitle","thesisSectionSubtitle");
+  setPublicSection("thesis","thesisSectionTitle","thesisSectionSubtitle","navThesis");
   setPublicSection("publications","publicationsSectionTitle","publicationsSectionSubtitle","navPublications");
   setPublicSection("projects","projectsSectionTitle","projectsSectionSubtitle","navProjects");
   setPublicSection("skills","skillsSectionTitle","skillsSectionSubtitle","navSkills");
