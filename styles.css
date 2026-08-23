@@ -914,72 +914,238 @@ html[data-theme="crimson-cream"]{
 }
 
 /* =========================================================
-   Nazifa public-site typography — slightly larger
-   Keeps admin typography unchanged
+   PUBLIC SECTION HIERARCHY
+   Large section names + smaller supporting subtitles
    ========================================================= */
-body:not(.admin-body){
-  font-size:16.5px;
+body:not(.admin-body) .section-title{
+  font:700 clamp(36px,4.4vw,44px)/1.08 Georgia,serif;
+  letter-spacing:-.035em;
+  margin:0 0 8px;
+  color:var(--text);
 }
 
-body:not(.admin-body) .sidebar h1{
-  font-size:32px;
+body:not(.admin-body) .section-subtitle{
+  margin:0 0 22px;
+  max-width:900px;
+  color:var(--muted);
+  font-size:clamp(20px,2.3vw,25px);
+  font-weight:600;
+  line-height:1.35;
+  letter-spacing:-.012em;
 }
 
-body:not(.admin-body) .role{
-  font-size:16px;
+body:not(.admin-body) .section-title + .section-subtitle{
+  margin-top:0;
 }
 
-body:not(.admin-body) .small{
-  font-size:14.5px;
+body:not(.admin-body) .section .lead{
+  margin-top:6px;
 }
 
-body:not(.admin-body) .meta p{
-  font-size:13.5px;
+.section-heading-editor{
+  margin-bottom:18px;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--surface-soft);
 }
-
-body:not(.admin-body) .links a,
-body:not(.admin-body) .profile-icon-link{
-  font-size:14.5px;
-}
-
-body:not(.admin-body) h2{
-  font-size:clamp(36px,5vw,51px);
-}
-
-body:not(.admin-body) h3{
-  font-size:20.5px;
-}
-
-body:not(.admin-body) .lead{
-  font-size:19px;
-}
-
-body:not(.admin-body) .pub-meta,
-body:not(.admin-body) .text-link{
-  font-size:13.5px;
-}
-
-body:not(.admin-body) .card p{
-  font-size:14.5px;
-}
-
-body:not(.admin-body) .contact-item a,
-body:not(.admin-body) .contact-item strong{
-  font-size:14.5px;
-}
-
-body:not(.admin-body) footer{
-  font-size:13.5px;
+.section-heading-editor .heading-editor-note{
+  grid-column:1/-1;
+  margin:0 0 2px;
+  color:var(--muted);
+  font-size:12px;
 }
 
 @media(max-width:680px){
-  body:not(.admin-body){
-    font-size:16px;
+  body:not(.admin-body) .section-title{
+    font-size:34px;
   }
-  body:not(.admin-body) .sidebar h1{
-    font-size:31px;
+  body:not(.admin-body) .section-subtitle{
+    font-size:20px;
   }
-  body:not(.admin-body) h2{
-    font-size:clamp(34px,9vw,46px);
-  }
+}
+
+
+/* =========================================================
+   MANUAL PUBLIC TYPOGRAPHY OVERRIDES
+   ========================================================= */
+:root{
+  --public-section-title-size:44px;
+  --public-section-subtitle-size:25px;
+  --public-section-title-color:var(--accent);
+  --public-section-subtitle-color:var(--muted);
+}
+
+body:not(.admin-body) .section-title{
+  font-size:clamp(32px,4.4vw,var(--public-section-title-size)) !important;
+  color:var(--public-section-title-color) !important;
+}
+
+body:not(.admin-body) .section-subtitle{
+  font-size:clamp(16px,2.3vw,var(--public-section-subtitle-size)) !important;
+  color:var(--public-section-subtitle-color) !important;
+}
+
+.typography-controls{
+  margin-top:24px;
+  padding-top:22px;
+  border-top:1px solid var(--line);
+}
+.typography-controls h3{
+  margin:0 0 5px;
+  font-size:19px;
+}
+.typography-controls .muted{
+  margin:0 0 16px;
+}
+.typography-control-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.typography-control-card{
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:var(--surface-soft);
+  padding:14px;
+}
+.typography-control-card h4{
+  margin:0 0 12px;
+  font-size:14px;
+}
+.typography-size-row{
+  display:grid;
+  grid-template-columns:1fr 90px;
+  gap:10px;
+  align-items:end;
+}
+.typography-color-row{
+  display:grid;
+  grid-template-columns:52px 1fr;
+  gap:9px;
+  align-items:end;
+  margin-top:12px;
+}
+.typography-color-row input[type="color"]{
+  width:52px;
+  height:42px;
+  padding:3px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--surface);
+}
+.typography-theme-toggle{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:10px;
+  font-size:12px;
+  color:var(--muted);
+}
+.typography-theme-toggle input{
+  width:auto;
+}
+.typography-reset-row{
+  margin-top:14px;
+}
+@media(max-width:760px){
+  .typography-control-grid{grid-template-columns:1fr}
+}
+
+
+/* Typography reset / undo controls */
+.typography-reset-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.typography-reset-row button:disabled{
+  opacity:.48;
+  cursor:not-allowed;
+}
+
+
+/* =========================================================
+   CUSTOM THEME BUILDER
+   ========================================================= */
+html[data-theme="custom-theme"]{
+  color-scheme:light;
+}
+
+.custom-theme-builder{
+  margin-top:24px;
+  padding-top:22px;
+  border-top:1px solid var(--line);
+}
+.custom-theme-builder-head{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-start;
+  margin-bottom:14px;
+}
+.custom-theme-builder-head h3{
+  margin:0 0 5px;
+  font-size:19px;
+}
+.custom-theme-builder-head p{
+  margin:0;
+}
+.custom-theme-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.custom-theme-card{
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:var(--surface-soft);
+  padding:14px;
+}
+.custom-theme-card:last-child{
+  grid-column:1/-1;
+}
+.custom-theme-card h4{
+  margin:0 0 12px;
+  font-size:14px;
+}
+.custom-color-control{
+  display:grid;
+  gap:6px;
+  margin-top:10px;
+}
+.custom-color-control:first-of-type{
+  margin-top:0;
+}
+.custom-color-control>label{
+  font-size:12px;
+  font-weight:700;
+  color:var(--muted);
+}
+.custom-color-control>div{
+  display:grid;
+  grid-template-columns:52px 1fr;
+  gap:8px;
+}
+.custom-color-control input[type="color"]{
+  width:52px;
+  height:42px;
+  padding:3px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--surface);
+}
+.custom-color-control input:not([type="color"]){
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:9px 10px;
+  background:var(--surface);
+  color:var(--text);
+}
+@media(max-width:760px){
+  .custom-theme-grid{grid-template-columns:1fr}
+  .custom-theme-card:last-child{grid-column:auto}
+  .custom-theme-builder-head{flex-direction:column}
 }

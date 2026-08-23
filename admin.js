@@ -117,14 +117,385 @@ const DEFAULT_CONTENT={
   }
 }
 
+
+const DEFAULT_SECTION_HEADINGS={
+  about:{title:"About Me",subtitle:"Mechanical engineering with an atomistic materials focus."},
+  research:{title:"Research Interests",subtitle:"What I work on"},
+  featured:{title:"Featured Research",subtitle:""},
+  publications:{title:"Publications",subtitle:"Research output"},
+  projects:{title:"Projects",subtitle:"Selected work"},
+  skills:{title:"Skills",subtitle:"Research toolkit"},
+  education:{title:"Education",subtitle:"Academic background"},
+  contact:{title:"Contact",subtitle:"Interested in computational materials and nanoscale mechanics?"},
+  cv:{title:"Curriculum Vitae",subtitle:"Academic CV"}
+};
+
+function normalizeSectionHeadings(content){
+  const current=(content.sectionHeadings&&typeof content.sectionHeadings==="object")?content.sectionHeadings:{};
+  const legacyAbout=content.aboutHeadline??DEFAULT_SECTION_HEADINGS.about.subtitle;
+  const legacyContact=content.contact?.headline??DEFAULT_SECTION_HEADINGS.contact.subtitle;
+  const out={};
+
+  Object.entries(DEFAULT_SECTION_HEADINGS).forEach(([key,defaults])=>{
+    const item=(current[key]&&typeof current[key]==="object")?current[key]:{};
+    const hasTitle=Object.prototype.hasOwnProperty.call(item,"title");
+    const hasSubtitle=Object.prototype.hasOwnProperty.call(item,"subtitle");
+    const fallbackSubtitle=key==="about"?legacyAbout:(key==="contact"?legacyContact:defaults.subtitle);
+
+    out[key]={
+      title:hasTitle?String(item.title??""):defaults.title,
+      subtitle:hasSubtitle?String(item.subtitle??""):String(fallbackSubtitle??"")
+    };
+  });
+
+  content.sectionHeadings=out;
+  return content;
+}
+
+
+const DEFAULT_TYPOGRAPHY={
+  sectionTitleSize:44,
+  sectionTitleColor:"",
+  sectionSubtitleSize:25,
+  sectionSubtitleColor:""
+};
+
+function normalizeTypography(content){
+  const a=(content.appearance&&typeof content.appearance==="object")?content.appearance:{};
+  const raw=(a.typography&&typeof a.typography==="object")?a.typography:{};
+  content.appearance={
+    ...a,
+    typography:{
+      sectionTitleSize:clampNumber(raw.sectionTitleSize,30,60,DEFAULT_TYPOGRAPHY.sectionTitleSize),
+      sectionTitleColor:validHex(raw.sectionTitleColor)?raw.sectionTitleColor:"",
+      sectionSubtitleSize:clampNumber(raw.sectionSubtitleSize,16,34,DEFAULT_TYPOGRAPHY.sectionSubtitleSize),
+      sectionSubtitleColor:validHex(raw.sectionSubtitleColor)?raw.sectionSubtitleColor:""
+    }
+  };
+  return content;
+}
+
+function clampNumber(value,min,max,fallback){
+  const n=Number(value);
+  return Number.isFinite(n)?Math.min(max,Math.max(min,n)):fallback;
+}
+function validHex(value){
+  return typeof value==="string"&&/^#[0-9a-fA-F]{6}$/.test(value.trim());
+}
+
+
+function applyAdminTypographyPreview(){
+  normalizeTypography(currentContent);
+  const t=currentContent.appearance.typography;
+  const root=document.documentElement;
+  root.style.setProperty("--public-section-title-size",`${t.sectionTitleSize}px`);
+  root.style.setProperty("--public-section-subtitle-size",`${t.sectionSubtitleSize}px`);
+  root.style.setProperty("--public-section-title-color",t.sectionTitleColor||"var(--accent)");
+  root.style.setProperty("--public-section-subtitle-color",t.sectionSubtitleColor||"var(--muted)");
+}
+
+
+
+const DEFAULT_CUSTOM_THEME={
+  bg:"#FCFBF9",
+  surface:"#FFFFFF",
+  surfaceAlt:"#F7F3EE",
+  text:"#2B2926",
+  muted:"#746E66",
+  line:"#E8E1D9",
+  accent:"#9F8064",
+  accentSoft:"#F5EEE7",
+  portraitA:"#D7C2AE",
+  portraitB:"#9A7D65"
+};
+
+function normalizeCustomTheme(content){
+  const a=(content.appearance&&typeof content.appearance==="object")?content.appearance:{};
+  const raw=(a.customTheme&&typeof a.customTheme==="object")?a.customTheme:{};
+  const out={};
+  Object.entries(DEFAULT_CUSTOM_THEME).forEach(([k,v])=>{
+    out[k]=validHex(raw[k])?raw[k].toUpperCase():v;
+  });
+  content.appearance={...a,customTheme:out};
+  return content;
+}
+
+function hexToRgba(hex,alpha){
+  const h=String(hex||"").replace("#","");
+  if(!/^[0-9a-fA-F]{6}$/.test(h))return `rgba(255,255,255,${alpha})`;
+  const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function applyCustomThemeVariables(theme){
+  const t=theme||DEFAULT_CUSTOM_THEME;
+  const root=document.documentElement;
+  root.style.setProperty("--bg",t.bg);
+  root.style.setProperty("--surface",t.surface);
+  root.style.setProperty("--surface-alt",t.surfaceAlt);
+  root.style.setProperty("--surface-soft",t.surface);
+  root.style.setProperty("--text",t.text);
+  root.style.setProperty("--muted",t.muted);
+  root.style.setProperty("--line",t.line);
+  root.style.setProperty("--accent",t.accent);
+  root.style.setProperty("--accent-soft",t.accentSoft);
+  root.style.setProperty("--header-bg",hexToRgba(t.bg,.96));
+  root.style.setProperty("--media-bg",t.surfaceAlt);
+  root.style.setProperty("--portrait-a",t.portraitA);
+  root.style.setProperty("--portrait-b",t.portraitB);
+}
+
+
+const CUSTOM_THEME_FIELDS=[
+  ["bg","fCustomBg"],
+  ["surface","fCustomSurface"],
+  ["surfaceAlt","fCustomSurfaceAlt"],
+  ["text","fCustomText"],
+  ["muted","fCustomMuted"],
+  ["line","fCustomLine"],
+  ["accent","fCustomAccent"],
+  ["accentSoft","fCustomAccentSoft"],
+  ["portraitA","fCustomPortraitA"],
+  ["portraitB","fCustomPortraitB"]
+];
+
+function readCustomThemeControls(){
+  const out={};
+  CUSTOM_THEME_FIELDS.forEach(([key,id])=>{
+    const el=$(id);
+    out[key]=validHex(el?.value)?el.value.toUpperCase():DEFAULT_CUSTOM_THEME[key];
+  });
+  return out;
+}
+
+function fillCustomThemeControls(){
+  normalizeCustomTheme(currentContent);
+  const t=currentContent.appearance.customTheme;
+  CUSTOM_THEME_FIELDS.forEach(([key,id])=>{
+    if($(id))$(id).value=t[key];
+    const hex=$(id+"Hex");
+    if(hex)hex.value=t[key];
+  });
+}
+
+function syncCustomThemeHexPair(colorId){
+  const picker=$(colorId),hex=$(colorId+"Hex");
+  if(!picker||!hex)return;
+  picker.addEventListener("input",()=>{
+    hex.value=picker.value.toUpperCase();
+    previewCustomThemeFromControls();
+  });
+  hex.addEventListener("input",()=>{
+    const v=hex.value.trim();
+    if(validHex(v)){
+      picker.value=v;
+      previewCustomThemeFromControls();
+    }
+  });
+}
+
+function previewCustomThemeFromControls(){
+  normalizeCustomTheme(currentContent);
+  currentContent.appearance.customTheme=readCustomThemeControls();
+  const customSelected=selectedAdminTheme()==="custom-theme";
+  const preview=document.querySelector('[data-theme-card="custom-theme"] .custom-theme-mini-preview');
+  if(preview){
+    const t=currentContent.appearance.customTheme;
+    preview.style.setProperty("--tc-bg",t.bg);
+    preview.style.setProperty("--tc-text",t.text);
+    preview.style.setProperty("--tc-accent",t.accent);
+    preview.style.setProperty("--tc-soft",t.accentSoft);
+  }
+  if(customSelected){
+    document.documentElement.dataset.theme="custom-theme";
+    applyCustomThemeVariables(currentContent.appearance.customTheme);
+    showCurrentThemeColorsInBoxes();
+  }
+  updateTypographyUndoButton();
+}
+
+function resetCustomThemeBuilder(){
+  normalizeCustomTheme(currentContent);
+  currentContent.appearance.customTheme=structuredClone(DEFAULT_CUSTOM_THEME);
+  fillCustomThemeControls();
+  if(selectedAdminTheme()==="custom-theme"){
+    document.documentElement.dataset.theme="custom-theme";
+    applyCustomThemeVariables(currentContent.appearance.customTheme);
+    showCurrentThemeColorsInBoxes();
+  }
+  setStatus("Custom theme reset to its starter palette. Click Save all changes to publish it.");
+}
+
+let typographySavedSnapshot=null;
+
+function typographyStateFromContent(){
+  normalizeTypography(currentContent);
+  return structuredClone(currentContent.appearance.typography);
+}
+
+function typographyStatesEqual(a,b){
+  return JSON.stringify(a||null)===JSON.stringify(b||null);
+}
+
+function updateTypographyUndoButton(){
+  const btn=$("undoTypographyBtn");
+  if(!btn)return;
+  const now=typographyStateFromContent();
+  btn.disabled=!typographySavedSnapshot||typographyStatesEqual(now,typographySavedSnapshot);
+}
+
+
+function currentThemeTypographyColors(){
+  const cs=getComputedStyle(document.documentElement);
+  const accent=cs.getPropertyValue("--accent").trim();
+  const muted=cs.getPropertyValue("--muted").trim();
+  return {
+    title:validHex(accent)?accent.toUpperCase():"#9F8064",
+    subtitle:validHex(muted)?muted.toUpperCase():"#746E66"
+  };
+}
+
+function showCurrentThemeColorsInBoxes(){
+  const colors=currentThemeTypographyColors();
+
+  $("useThemeSectionTitleColor").checked=true;
+  $("useThemeSectionSubtitleColor").checked=true;
+
+  $("fSectionTitleColor").value=colors.title;
+  $("fSectionTitleColorText").value=colors.title;
+  $("fSectionSubtitleColor").value=colors.subtitle;
+  $("fSectionSubtitleColorText").value=colors.subtitle;
+
+  normalizeTypography(currentContent);
+  currentContent.appearance.typography.sectionTitleColor="";
+  currentContent.appearance.typography.sectionSubtitleColor="";
+
+  syncTypographyDisabledState();
+  applyAdminTypographyPreview();
+  updateTypographyUndoButton();
+}
+
+function renderTypographyControlsFromState(t){
+  const state={
+    sectionTitleSize:clampNumber(t?.sectionTitleSize,30,60,DEFAULT_TYPOGRAPHY.sectionTitleSize),
+    sectionTitleColor:validHex(t?.sectionTitleColor)?t.sectionTitleColor:"",
+    sectionSubtitleSize:clampNumber(t?.sectionSubtitleSize,16,34,DEFAULT_TYPOGRAPHY.sectionSubtitleSize),
+    sectionSubtitleColor:validHex(t?.sectionSubtitleColor)?t.sectionSubtitleColor:""
+  };
+
+  $("fSectionTitleSize").value=state.sectionTitleSize;
+  $("fSectionTitleSizeNumber").value=state.sectionTitleSize;
+  $("fSectionSubtitleSize").value=state.sectionSubtitleSize;
+  $("fSectionSubtitleSizeNumber").value=state.sectionSubtitleSize;
+
+  const themeColors=currentThemeTypographyColors();
+  $("fSectionTitleColor").value=state.sectionTitleColor||themeColors.title;
+  $("fSectionSubtitleColor").value=state.sectionSubtitleColor||themeColors.subtitle;
+  $("fSectionTitleColorText").value=state.sectionTitleColor||themeColors.title;
+  $("fSectionSubtitleColorText").value=state.sectionSubtitleColor||themeColors.subtitle;
+
+  $("useThemeSectionTitleColor").checked=!state.sectionTitleColor;
+  $("useThemeSectionSubtitleColor").checked=!state.sectionSubtitleColor;
+
+  syncTypographyDisabledState();
+  currentContent.appearance.typography=structuredClone(state);
+  applyAdminTypographyPreview();
+  updateTypographyUndoButton();
+}
+
+function fillTypographyControls(){
+  normalizeTypography(currentContent);
+  const t=structuredClone(currentContent.appearance.typography);
+  typographySavedSnapshot=structuredClone(t);
+  renderTypographyControlsFromState(t);
+}
+
+function syncTypographyDisabledState(){
+  /* Color boxes stay editable even while showing the theme's current colors.
+     Editing a box automatically switches that item to manual override mode. */
+  $("fSectionTitleColor").disabled=false;
+  $("fSectionTitleColorText").disabled=false;
+  $("fSectionSubtitleColor").disabled=false;
+  $("fSectionSubtitleColorText").disabled=false;
+}
+
+function syncColorPickerToText(pickerId,textId,themeToggleId){
+  const picker=$(pickerId),text=$(textId),toggle=$(themeToggleId);
+  if(!picker||!text)return;
+
+  picker.addEventListener("input",()=>{
+    if(toggle)toggle.checked=false;
+    text.value=picker.value.toUpperCase();
+    previewTypographyFromControls();
+  });
+
+  text.addEventListener("input",()=>{
+    const value=text.value.trim();
+    if(validHex(value)){
+      if(toggle)toggle.checked=false;
+      picker.value=value;
+    }
+    previewTypographyFromControls();
+  });
+}
+
+function previewTypographyFromControls(){
+  normalizeTypography(currentContent);
+  currentContent.appearance.typography.sectionTitleSize=clampNumber($("fSectionTitleSize").value,30,60,44);
+  currentContent.appearance.typography.sectionSubtitleSize=clampNumber($("fSectionSubtitleSize").value,16,34,25);
+  currentContent.appearance.typography.sectionTitleColor=$("useThemeSectionTitleColor").checked?"":($("fSectionTitleColorText").value.trim()||$("fSectionTitleColor").value);
+  currentContent.appearance.typography.sectionSubtitleColor=$("useThemeSectionSubtitleColor").checked?"":($("fSectionSubtitleColorText").value.trim()||$("fSectionSubtitleColor").value);
+  if(currentContent.appearance.typography.sectionTitleColor&&!validHex(currentContent.appearance.typography.sectionTitleColor))currentContent.appearance.typography.sectionTitleColor="";
+  if(currentContent.appearance.typography.sectionSubtitleColor&&!validHex(currentContent.appearance.typography.sectionSubtitleColor))currentContent.appearance.typography.sectionSubtitleColor="";
+  applyAdminTypographyPreview();
+  updateTypographyUndoButton();
+}
+
+function resetTypographyControls(){
+  const defaults=structuredClone(DEFAULT_TYPOGRAPHY);
+
+  /* Keep range sliders and numeric boxes synchronized. */
+  $("fSectionTitleSize").value=defaults.sectionTitleSize;
+  $("fSectionTitleSizeNumber").value=defaults.sectionTitleSize;
+  $("fSectionSubtitleSize").value=defaults.sectionSubtitleSize;
+  $("fSectionSubtitleSizeNumber").value=defaults.sectionSubtitleSize;
+
+  /* Default colors follow the currently selected theme and the color boxes
+     visibly show those exact theme colors. */
+  const themeColors=currentThemeTypographyColors();
+  $("useThemeSectionTitleColor").checked=true;
+  $("useThemeSectionSubtitleColor").checked=true;
+  $("fSectionTitleColor").value=themeColors.title;
+  $("fSectionTitleColorText").value=themeColors.title;
+  $("fSectionSubtitleColor").value=themeColors.subtitle;
+  $("fSectionSubtitleColorText").value=themeColors.subtitle;
+
+  syncTypographyDisabledState();
+  previewTypographyFromControls();
+  setStatus("Typography reset to defaults. Click Save all changes to publish it.");
+}
+
+function undoTypographyControls(){
+  if(!typographySavedSnapshot){
+    setStatus("No saved typography state is available to restore.");
+    return;
+  }
+  renderTypographyControlsFromState(typographySavedSnapshot);
+  setStatus("Unsaved typography changes were undone.");
+}
 const sb=window.supabase.createClient(window.SUPABASE_CONFIG.url,window.SUPABASE_CONFIG.key);
-const ADMIN_THEMES=["classic-brown","soft-beige","slate-blue","deep-navy","forest-sage","olive-stone","burgundy","dusty-plum","charcoal","dark-academic","solar-citrus","electric-azure","coral-bloom","mint-pop","lemon-sky","aqua-lime","berry-fizz","peach-punch","lavender-glow","spring-green","midnight-gold","ink-cyan","black-coral","graphite-lime","royal-cream","espresso-ivory","aubergine-gold","emerald-night","crimson-slate","arctic-black","cobalt-white","scarlet-paper","emerald-white","violet-ivory","teal-porcelain","navy-sand","magenta-frost","orange-ink","indigo-mint","crimson-cream"];
+const ADMIN_THEMES=["classic-brown","soft-beige","slate-blue","deep-navy","forest-sage","olive-stone","burgundy","dusty-plum","charcoal","dark-academic","solar-citrus","electric-azure","coral-bloom","mint-pop","lemon-sky","aqua-lime","berry-fizz","peach-punch","lavender-glow","spring-green","midnight-gold","ink-cyan","black-coral","graphite-lime","royal-cream","espresso-ivory","aubergine-gold","emerald-night","crimson-slate","arctic-black","cobalt-white","scarlet-paper","emerald-white","violet-ivory","teal-porcelain","navy-sand","magenta-frost","orange-ink","indigo-mint","crimson-cream","custom-theme"];
 function validAdminTheme(t){return ADMIN_THEMES.includes(t)?t:"soft-beige"}
 function selectedAdminTheme(){
   return document.querySelector('input[name="siteTheme"]:checked')?.value||"soft-beige";
 }
 function applyAdminThemePreview(theme){
-  document.documentElement.dataset.theme=validAdminTheme(theme);
+  const valid=validAdminTheme(theme);
+  document.documentElement.dataset.theme=valid;
+  if(valid==="custom-theme"){
+    normalizeCustomTheme(currentContent);
+    applyCustomThemeVariables(currentContent.appearance.customTheme);
+  }
 }
 function fillThemeChooser(){
   const theme=validAdminTheme(currentContent.defaultTheme||"soft-beige");
@@ -142,6 +513,10 @@ document.addEventListener("change",e=>{
     card.classList.toggle("selected",card.dataset.themeCard===input.value);
   });
   applyAdminThemePreview(input.value);
+  if($("fSectionTitleColor")&&$("fSectionSubtitleColor")){
+    showCurrentThemeColorsInBoxes();
+    setStatus("Theme preview updated. Typography colors now start from this theme's colors.");
+  }
 });
 
 const $=id=>document.getElementById(id);
@@ -187,6 +562,9 @@ function merge(base,extra){
   return extra??base;
 }
 function normalizeMedia(content){
+  normalizeCustomTheme(content);
+  normalizeTypography(content);
+  normalizeSectionHeadings(content);
   content.sectionMedia=content.sectionMedia||{};
   content.sectionMedia.profile=Array.isArray(content.sectionMedia.profile)?content.sectionMedia.profile:[];
   content.featuredResearch=content.featuredResearch||{};
@@ -212,14 +590,31 @@ function fillForms(){
   $("fInstitution").value=currentContent.institution||"";
   $("fLocation").value=currentContent.location||"";
   $("fFocus").value=currentContent.focus||"";
-  $("fAboutHeadline").value=currentContent.aboutHeadline||"";
+  const sections=normalizeSectionHeadings(currentContent).sectionHeadings;
+  $("fSectionAboutTitle").value=sections.about.title||"";
+  $("fAboutHeadline").value=sections.about.subtitle||"";
+  $("fSectionResearchTitle").value=sections.research.title||"";
+  $("fSectionResearchSubtitle").value=sections.research.subtitle||"";
+  $("fSectionFeaturedTitle").value=sections.featured.title||"";
+  $("fSectionFeaturedSubtitle").value=sections.featured.subtitle||"";
+  $("fSectionPublicationsTitle").value=sections.publications.title||"";
+  $("fSectionPublicationsSubtitle").value=sections.publications.subtitle||"";
+  $("fSectionProjectsTitle").value=sections.projects.title||"";
+  $("fSectionProjectsSubtitle").value=sections.projects.subtitle||"";
+  $("fSectionSkillsTitle").value=sections.skills.title||"";
+  $("fSectionSkillsSubtitle").value=sections.skills.subtitle||"";
+  $("fSectionEducationTitle").value=sections.education.title||"";
+  $("fSectionEducationSubtitle").value=sections.education.subtitle||"";
+  $("fSectionContactTitle").value=sections.contact.title||"";
+  $("fContactHeadline").value=sections.contact.subtitle||"";
+  $("fSectionCvTitle").value=sections.cv.title||"";
+  $("fSectionCvSubtitle").value=sections.cv.subtitle||"";
   $("fAboutLead").value=currentContent.aboutLead||"";
   $("fAboutBio").value=currentContent.aboutBio||"";
   $("fInterests").value=(currentContent.researchInterests||[]).join("\n");
   $("fResearchTitle").value=currentContent.featuredResearch?.title||"";
   $("fResearchDescription").value=currentContent.featuredResearch?.description||"";
   $("fResearchTags").value=(currentContent.featuredResearch?.tags||[]).join(", ");
-  $("fContactHeadline").value=currentContent.contact?.headline||"";
   $("fContactMessage").value=currentContent.contact?.message||"";
   $("fEmail").value=currentContent.contact?.email||"";
   $("fPhone").value=currentContent.contact?.phone||"";
@@ -239,6 +634,8 @@ function fillForms(){
   renderAllEditors();
   renderCvState();
   fillThemeChooser();
+  fillTypographyControls();
+  fillCustomThemeControls();
 }
 
 function renderAllEditors(){
@@ -424,7 +821,32 @@ function syncAllForms(){
   currentContent.location=$("fLocation").value.trim();
   currentContent.focus=$("fFocus").value.trim();
   currentContent.defaultTheme=selectedAdminTheme();
-  currentContent.aboutHeadline=$("fAboutHeadline").value.trim();
+  normalizeCustomTheme(currentContent);
+  currentContent.appearance.customTheme=readCustomThemeControls();
+  normalizeTypography(currentContent);
+  currentContent.appearance.typography={
+    sectionTitleSize:clampNumber($("fSectionTitleSizeNumber").value||$("fSectionTitleSize").value,30,60,44),
+    sectionTitleColor:$("useThemeSectionTitleColor").checked?"":($("fSectionTitleColorText").value.trim()||$("fSectionTitleColor").value),
+    sectionSubtitleSize:clampNumber($("fSectionSubtitleSizeNumber").value||$("fSectionSubtitleSize").value,16,34,25),
+    sectionSubtitleColor:$("useThemeSectionSubtitleColor").checked?"":($("fSectionSubtitleColorText").value.trim()||$("fSectionSubtitleColor").value)
+  };
+  if(currentContent.appearance.typography.sectionTitleColor&&!validHex(currentContent.appearance.typography.sectionTitleColor))currentContent.appearance.typography.sectionTitleColor="";
+  if(currentContent.appearance.typography.sectionSubtitleColor&&!validHex(currentContent.appearance.typography.sectionSubtitleColor))currentContent.appearance.typography.sectionSubtitleColor="";
+
+  currentContent.sectionHeadings={
+    about:{title:$("fSectionAboutTitle").value.trim(),subtitle:$("fAboutHeadline").value.trim()},
+    research:{title:$("fSectionResearchTitle").value.trim(),subtitle:$("fSectionResearchSubtitle").value.trim()},
+    featured:{title:$("fSectionFeaturedTitle").value.trim(),subtitle:$("fSectionFeaturedSubtitle").value.trim()},
+    publications:{title:$("fSectionPublicationsTitle").value.trim(),subtitle:$("fSectionPublicationsSubtitle").value.trim()},
+    projects:{title:$("fSectionProjectsTitle").value.trim(),subtitle:$("fSectionProjectsSubtitle").value.trim()},
+    skills:{title:$("fSectionSkillsTitle").value.trim(),subtitle:$("fSectionSkillsSubtitle").value.trim()},
+    education:{title:$("fSectionEducationTitle").value.trim(),subtitle:$("fSectionEducationSubtitle").value.trim()},
+    contact:{title:$("fSectionContactTitle").value.trim(),subtitle:$("fContactHeadline").value.trim()},
+    cv:{title:$("fSectionCvTitle").value.trim(),subtitle:$("fSectionCvSubtitle").value.trim()}
+  };
+
+  /* Keep the old fields synchronized for backwards compatibility. */
+  currentContent.aboutHeadline=currentContent.sectionHeadings.about.subtitle;
   currentContent.aboutLead=$("fAboutLead").value.trim();
   currentContent.aboutBio=$("fAboutBio").value.trim();
   currentContent.researchInterests=$("fInterests").value.split("\n").map(x=>x.trim()).filter(Boolean);
@@ -441,7 +863,7 @@ function syncAllForms(){
 
   const contactMedia=currentContent.contact?.media||[];
   currentContent.contact={
-    headline:$("fContactHeadline").value.trim(),
+    headline:currentContent.sectionHeadings.contact.subtitle,
     message:$("fContactMessage").value.trim(),
     email:$("fEmail").value.trim(),
     phone:$("fPhone").value.trim(),
@@ -868,8 +1290,54 @@ async function saveAll(){
     $("photoPreview").classList.remove("hidden");
   }
   renderCvState();
+  typographySavedSnapshot=typographyStateFromContent();
+  updateTypographyUndoButton();
 }
 function setStatus(s){$("saveStatus").textContent=s}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+
+
+["fSectionTitleSize","fSectionTitleSizeNumber"].forEach(id=>{
+  $(id)?.addEventListener("input",e=>{
+    const v=clampNumber(e.target.value,30,60,44);
+    $("fSectionTitleSize").value=v;
+    $("fSectionTitleSizeNumber").value=v;
+    previewTypographyFromControls();
+  });
+});
+["fSectionSubtitleSize","fSectionSubtitleSizeNumber"].forEach(id=>{
+  $(id)?.addEventListener("input",e=>{
+    const v=clampNumber(e.target.value,16,34,25);
+    $("fSectionSubtitleSize").value=v;
+    $("fSectionSubtitleSizeNumber").value=v;
+    previewTypographyFromControls();
+  });
+});
+syncColorPickerToText("fSectionTitleColor","fSectionTitleColorText","useThemeSectionTitleColor");
+syncColorPickerToText("fSectionSubtitleColor","fSectionSubtitleColorText","useThemeSectionSubtitleColor");
+$("useThemeSectionTitleColor")?.addEventListener("change",()=>{
+  if($("useThemeSectionTitleColor").checked){
+    const c=currentThemeTypographyColors().title;
+    $("fSectionTitleColor").value=c;
+    $("fSectionTitleColorText").value=c;
+  }
+  syncTypographyDisabledState();
+  previewTypographyFromControls();
+});
+$("useThemeSectionSubtitleColor")?.addEventListener("change",()=>{
+  if($("useThemeSectionSubtitleColor").checked){
+    const c=currentThemeTypographyColors().subtitle;
+    $("fSectionSubtitleColor").value=c;
+    $("fSectionSubtitleColorText").value=c;
+  }
+  syncTypographyDisabledState();
+  previewTypographyFromControls();
+});
+$("resetTypographyBtn")?.addEventListener("click",resetTypographyControls);
+$("undoTypographyBtn")?.addEventListener("click",undoTypographyControls);
+
+
+CUSTOM_THEME_FIELDS.forEach(([,id])=>syncCustomThemeHexPair(id));
+$("resetCustomThemeBtn")?.addEventListener("click",resetCustomThemeBuilder);
 
 boot();
