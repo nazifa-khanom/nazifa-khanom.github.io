@@ -1492,7 +1492,7 @@ async function generateExistingPdfThumbnail(spec){
 
   const parts=spec.split(":");
   let owner,index;
-  if(["profile","research","contact"].includes(parts[0])){
+  if(["profile","research","thesis","contact"].includes(parts[0])){
     owner=parts[0];
     index=Number(parts[1]);
   }else{
@@ -1524,7 +1524,7 @@ async function uploadPdfThumbnail(spec,row){
   syncAllForms();
   const parts=spec.split(":");
   let owner,index;
-  if(["profile","research","contact"].includes(parts[0])){
+  if(["profile","research","thesis","contact"].includes(parts[0])){
     owner=parts[0];index=Number(parts[1]);
   }else{
     owner=`${parts[0]}:${parts[1]}`;index=Number(parts[2]);
@@ -1567,7 +1567,7 @@ async function removeMedia(spec){
   syncAllForms();
   const parts=spec.split(":");
   let owner,index;
-  if(["profile","research","contact"].includes(parts[0])){
+  if(["profile","research","thesis","contact"].includes(parts[0])){
     owner=parts[0];index=Number(parts[1]);
   }else{
     owner=`${parts[0]}:${parts[1]}`;index=Number(parts[2]);
