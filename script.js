@@ -121,6 +121,7 @@ const DEFAULT_CONTENT={
 const DEFAULT_SECTION_HEADINGS={
   about:{title:"About Me",subtitle:"Mechanical engineering with an atomistic materials focus."},
   research:{title:"Research Interests",subtitle:"What I work on"},
+  thesis:{title:"Undergraduate Thesis",subtitle:"Research Thesis"},
   featured:{title:"Featured Research",subtitle:""},
   publications:{title:"Publications",subtitle:"Research output"},
   projects:{title:"Projects",subtitle:"Selected work"},
@@ -245,11 +246,11 @@ function applyCustomThemeVariables(theme){
 }
 
 
-const SITE_SECTION_KEYS=["about","research","featured","publications","projects","skills","education","contact","cv"];
+const SITE_SECTION_KEYS=["about","research","thesis","featured","publications","projects","skills","education","contact","cv"];
 const DEFAULT_SITE_SETTINGS={
-  sectionOrder:["about","research","featured","publications","projects","skills","education","contact","cv"],
+  sectionOrder:["about","research","thesis","featured","publications","projects","skills","education","contact","cv"],
   sectionVisibility:{
-    about:true,research:true,featured:true,publications:true,projects:true,skills:true,education:true,contact:true,cv:true
+    about:true,research:true,thesis:false,featured:true,publications:true,projects:true,skills:true,education:true,contact:true,cv:true
   },
   layout:{
     maxWidth:1180,
@@ -557,6 +558,36 @@ function applySiteSettings(d){
   applyExperienceSettings(d);
 }
 
+
+const DEFAULT_THESIS={
+  title:"",
+  description:"",
+  supervisor:"",
+  coSupervisor:"",
+  degree:"B.Sc. in Mechanical Engineering",
+  institution:"",
+  period:"",
+  status:"Completed",
+  keywords:[],
+  media:[]
+};
+function normalizeThesis(content){
+  const raw=(content.thesis&&typeof content.thesis==="object")?content.thesis:{};
+  content.thesis={
+    title:String(raw.title??""),
+    description:String(raw.description??""),
+    supervisor:String(raw.supervisor??""),
+    coSupervisor:String(raw.coSupervisor??""),
+    degree:String(raw.degree??DEFAULT_THESIS.degree),
+    institution:String(raw.institution??content.institution??""),
+    period:String(raw.period??""),
+    status:String(raw.status??DEFAULT_THESIS.status),
+    keywords:Array.isArray(raw.keywords)?raw.keywords:[],
+    media:Array.isArray(raw.media)?raw.media:[]
+  };
+  return content;
+}
+
 const sb=window.supabase.createClient(window.SUPABASE_CONFIG.url,window.SUPABASE_CONFIG.key);
 const SITE_THEMES=["classic-brown","soft-beige","slate-blue","deep-navy","forest-sage","olive-stone","burgundy","dusty-plum","charcoal","dark-academic","solar-citrus","electric-azure","coral-bloom","mint-pop","lemon-sky","aqua-lime","berry-fizz","peach-punch","lavender-glow","spring-green","midnight-gold","ink-cyan","black-coral","graphite-lime","royal-cream","espresso-ivory","aubergine-gold","emerald-night","crimson-slate","arctic-black","cobalt-white","scarlet-paper","emerald-white","violet-ivory","teal-porcelain","navy-sand","magenta-frost","orange-ink","indigo-mint","crimson-cream","custom-theme"];
 function validSiteTheme(t){return SITE_THEMES.includes(t)?t:"soft-beige"}
@@ -571,6 +602,7 @@ function merge(base,extra){
   return extra??base;
 }
 function normalize(d){
+  normalizeThesis(d);
   normalizeSiteSettings(d);
   normalizeCustomTheme(d);
   normalizeTypography(d);
@@ -648,6 +680,7 @@ function render(d){
 
   setPublicSection("about","aboutSectionTitle","aboutHeadline");
   setPublicSection("research","researchSectionTitle","researchSectionSubtitle","navResearch");
+  setPublicSection("thesis","thesisSectionTitle","thesisSectionSubtitle");
   setPublicSection("featured","featuredSectionTitle","featuredSectionSubtitle");
   setPublicSection("publications","publicationsSectionTitle","publicationsSectionSubtitle","navPublications");
   setPublicSection("projects","projectsSectionTitle","projectsSectionSubtitle","navProjects");
@@ -671,6 +704,23 @@ function render(d){
 
   $("profileMedia").innerHTML=mediaHtml(d.sectionMedia?.profile||[]);
   $("researchInterests").innerHTML=(d.researchInterests||[]).map(x=>`<li>${esc(x)}</li>`).join("");
+
+  normalizeThesis(d);
+  $("thesisTitle").textContent=d.thesis.title||"";
+  $("thesisDescription").textContent=d.thesis.description||"";
+  $("thesisKeywords").innerHTML=(d.thesis.keywords||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join("");
+  const thesisMeta=[
+    ["Supervisor",d.thesis.supervisor],
+    ["Co-supervisor",d.thesis.coSupervisor],
+    ["Degree",d.thesis.degree],
+    ["Institution",d.thesis.institution],
+    ["Period",d.thesis.period],
+    ["Status",d.thesis.status]
+  ].filter(([,value])=>String(value||"").trim());
+  $("thesisMeta").innerHTML=thesisMeta.map(([label,value])=>`
+    <div class="thesis-meta-item"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join("");
+  $("thesisMedia").innerHTML=mediaHtml(d.thesis.media||[]);
+
   $("researchTitle").textContent=d.featuredResearch?.title||"";
   $("researchDescription").textContent=d.featuredResearch?.description||"";
   $("researchTags").innerHTML=(d.featuredResearch?.tags||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join("");
