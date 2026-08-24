@@ -520,6 +520,7 @@ const DEFAULT_SITE_SETTINGS={
     sectionCoverTopBlend:false,
     sectionCoverSide:"right",
     sectionCoverHeight:300,
+    sectionCoverGap:12,
     sectionCoverZoom:100,
     sectionCoverFade:"medium",
     sectionCoverDetails:true,
@@ -600,6 +601,7 @@ function normalizeSiteSettings(content){
       sectionCoverTopBlend:Object.prototype.hasOwnProperty.call(l,"sectionCoverTopBlend")?l.sectionCoverTopBlend===true:DEFAULT_SITE_SETTINGS.layout.sectionCoverTopBlend,
       sectionCoverSide:["left","right"].includes(l.sectionCoverSide)?l.sectionCoverSide:DEFAULT_SITE_SETTINGS.layout.sectionCoverSide,
       sectionCoverHeight:clampNumber(l.sectionCoverHeight,220,420,DEFAULT_SITE_SETTINGS.layout.sectionCoverHeight),
+      sectionCoverGap:[0,12,24,42].includes(Number(l.sectionCoverGap))?Number(l.sectionCoverGap):DEFAULT_SITE_SETTINGS.layout.sectionCoverGap,
       sectionCoverZoom:clampNumber(l.sectionCoverZoom,40,170,DEFAULT_SITE_SETTINGS.layout.sectionCoverZoom),
       sectionCoverFade:["soft","medium","strong"].includes(l.sectionCoverFade)?l.sectionCoverFade:DEFAULT_SITE_SETTINGS.layout.sectionCoverFade,
       sectionCoverDetails:Object.prototype.hasOwnProperty.call(l,"sectionCoverDetails")?l.sectionCoverDetails!==false:DEFAULT_SITE_SETTINGS.layout.sectionCoverDetails,
@@ -660,6 +662,7 @@ function resetSectionCoverControls(){
     $("fSectionCoverSide").value=defaults.sectionCoverSide||"right";
     $("fSectionCoverHeight").value=defaults.sectionCoverHeight||300;
     $("fSectionCoverHeightNumber").value=defaults.sectionCoverHeight||300;
+    $("fSectionCoverGap").value=String(defaults.sectionCoverGap??12);
     $("fSectionCoverZoom").value=defaults.sectionCoverZoom||100;
     $("fSectionCoverZoomNumber").value=defaults.sectionCoverZoom||100;
     $("fSectionCoverFade").value=defaults.sectionCoverFade||"medium";
@@ -679,7 +682,7 @@ function updateSectionCoverAdminOptions(){
   const active=sectionMode&&coverEnabled;
   $("sectionCoverOptions")?.classList.toggle("disabled-options",!active);
 
-  ["fSectionCoverStyle","fSectionCoverPhotoFit","fSectionCoverSide","fSectionCoverFade","fSectionCoverHeight","fSectionCoverHeightNumber","fSectionCoverZoom","fSectionCoverZoomNumber","fSectionCoverDetails","fSectionCoverSocials","resetSectionCoverBtn"]
+  ["fSectionCoverStyle","fSectionCoverPhotoFit","fSectionCoverSide","fSectionCoverFade","fSectionCoverHeight","fSectionCoverHeightNumber","fSectionCoverGap","fSectionCoverZoom","fSectionCoverZoomNumber","fSectionCoverDetails","fSectionCoverSocials","resetSectionCoverBtn"]
     .forEach(id=>{if($(id))$(id).disabled=!active});
   updateCoverStyleSpecificControls();
 }
@@ -730,6 +733,7 @@ function fillSiteCustomizationControls(){
   $("fSectionCoverSide").value=l.sectionCoverSide||"right";
   $("fSectionCoverHeight").value=l.sectionCoverHeight||300;
   $("fSectionCoverHeightNumber").value=l.sectionCoverHeight||300;
+  $("fSectionCoverGap").value=String([0,12,24,42].includes(Number(l.sectionCoverGap))?Number(l.sectionCoverGap):12);
   $("fSectionCoverZoom").value=l.sectionCoverZoom||100;
   $("fSectionCoverZoomNumber").value=l.sectionCoverZoom||100;
   $("fSectionCoverFade").value=l.sectionCoverFade||"medium";
@@ -800,6 +804,7 @@ function syncSiteCustomizationFromControls(){
   l.sectionCoverTopBlend=$("fSectionCoverTopBlend").checked;
   l.sectionCoverSide=$("fSectionCoverSide").value;
   l.sectionCoverHeight=clampNumber($("fSectionCoverHeightNumber").value||$("fSectionCoverHeight").value,220,420,300);
+  l.sectionCoverGap=Number($("fSectionCoverGap").value);
   l.sectionCoverZoom=clampNumber($("fSectionCoverZoomNumber").value||$("fSectionCoverZoom").value,40,170,100);
   l.sectionCoverFade=$("fSectionCoverFade").value;
   l.sectionCoverDetails=$("fSectionCoverDetails").checked;
@@ -955,7 +960,7 @@ function normalizeThesis(content){
 }
 
 
-const BUILDER_SETTINGS_SCHEMA_VERSION=6;
+const BUILDER_SETTINGS_SCHEMA_VERSION=7;
 let savedBuilderSettingsSnapshot=null;
 
 function deepCloneSafe(value){
@@ -2394,4 +2399,5 @@ $("fSectionCoverTopBlend")?.addEventListener("change",()=>scheduleAdminPreview(t
 });
 $("resetSectionCoverBtn")?.addEventListener("click",resetSectionCoverControls);
 
+$("fSectionCoverGap")?.addEventListener("change",()=>scheduleAdminPreview(true));
 boot();
