@@ -513,7 +513,15 @@ const DEFAULT_SITE_SETTINGS={
     stickySidebar:true,
     navigationMode:"single",
     pageTransition:"fade",
-    pagePager:true
+    pagePager:true,
+    sectionCoverEnabled:true,
+    sectionCoverStyle:"framed",
+    sectionCoverSide:"right",
+    sectionCoverHeight:300,
+    sectionCoverZoom:100,
+    sectionCoverFade:"medium",
+    sectionCoverDetails:true,
+    sectionCoverSocials:true
   },
   experience:{
     activeNav:true,
@@ -583,7 +591,15 @@ function normalizeSiteSettings(content){
       stickySidebar:Object.prototype.hasOwnProperty.call(l,"stickySidebar")?l.stickySidebar!==false:DEFAULT_SITE_SETTINGS.layout.stickySidebar,
       navigationMode:["single","sections"].includes(l.navigationMode)?l.navigationMode:DEFAULT_SITE_SETTINGS.layout.navigationMode,
       pageTransition:["none","fade","slide"].includes(l.pageTransition)?l.pageTransition:DEFAULT_SITE_SETTINGS.layout.pageTransition,
-      pagePager:Object.prototype.hasOwnProperty.call(l,"pagePager")?l.pagePager!==false:DEFAULT_SITE_SETTINGS.layout.pagePager
+      pagePager:Object.prototype.hasOwnProperty.call(l,"pagePager")?l.pagePager!==false:DEFAULT_SITE_SETTINGS.layout.pagePager,
+      sectionCoverEnabled:Object.prototype.hasOwnProperty.call(l,"sectionCoverEnabled")?l.sectionCoverEnabled!==false:DEFAULT_SITE_SETTINGS.layout.sectionCoverEnabled,
+      sectionCoverStyle:["framed","fullbleed","split","glass"].includes(l.sectionCoverStyle)?l.sectionCoverStyle:DEFAULT_SITE_SETTINGS.layout.sectionCoverStyle,
+      sectionCoverSide:["left","right"].includes(l.sectionCoverSide)?l.sectionCoverSide:DEFAULT_SITE_SETTINGS.layout.sectionCoverSide,
+      sectionCoverHeight:clampNumber(l.sectionCoverHeight,220,420,DEFAULT_SITE_SETTINGS.layout.sectionCoverHeight),
+      sectionCoverZoom:clampNumber(l.sectionCoverZoom,70,170,DEFAULT_SITE_SETTINGS.layout.sectionCoverZoom),
+      sectionCoverFade:["soft","medium","strong"].includes(l.sectionCoverFade)?l.sectionCoverFade:DEFAULT_SITE_SETTINGS.layout.sectionCoverFade,
+      sectionCoverDetails:Object.prototype.hasOwnProperty.call(l,"sectionCoverDetails")?l.sectionCoverDetails!==false:DEFAULT_SITE_SETTINGS.layout.sectionCoverDetails,
+      sectionCoverSocials:Object.prototype.hasOwnProperty.call(l,"sectionCoverSocials")?l.sectionCoverSocials!==false:DEFAULT_SITE_SETTINGS.layout.sectionCoverSocials
     },
     experience:{
       ...e,
@@ -618,11 +634,45 @@ function portraitRadiusValue(shape){
 
 
 
+
+
+function resetSectionCoverControls(){
+  const defaults=DEFAULT_SITE_SETTINGS.layout;
+  setHistoryMuted(()=>{
+    $("fSectionCoverEnabled").checked=defaults.sectionCoverEnabled!==false;
+    $("fSectionCoverStyle").value=defaults.sectionCoverStyle||"framed";
+    $("fSectionCoverSide").value=defaults.sectionCoverSide||"right";
+    $("fSectionCoverHeight").value=defaults.sectionCoverHeight||300;
+    $("fSectionCoverHeightNumber").value=defaults.sectionCoverHeight||300;
+    $("fSectionCoverZoom").value=defaults.sectionCoverZoom||100;
+    $("fSectionCoverZoomNumber").value=defaults.sectionCoverZoom||100;
+    $("fSectionCoverFade").value=defaults.sectionCoverFade||"medium";
+    $("fSectionCoverDetails").checked=defaults.sectionCoverDetails!==false;
+    $("fSectionCoverSocials").checked=defaults.sectionCoverSocials!==false;
+    updateSectionCoverAdminOptions();
+  });
+  syncSiteCustomizationFromControls();
+  scheduleAdminPreview(true);
+  setStatus("Inner-page cover reset to defaults. Save all changes to publish.");
+}
+
+function updateSectionCoverAdminOptions(){
+  const sectionMode=$("fNavigationModeSections")?.checked===true;
+  const coverEnabled=$("fSectionCoverEnabled")?.checked===true;
+  const active=sectionMode&&coverEnabled;
+  $("sectionCoverOptions")?.classList.toggle("disabled-options",!active);
+
+  ["fSectionCoverStyle","fSectionCoverSide","fSectionCoverFade","fSectionCoverHeight","fSectionCoverHeightNumber","fSectionCoverZoom","fSectionCoverZoomNumber","fSectionCoverDetails","fSectionCoverSocials","resetSectionCoverBtn"]
+    .forEach(id=>{if($(id))$(id).disabled=!active});
+}
+
 function updateSectionPageAdminOptions(){
   const sectionMode=$("fNavigationModeSections")?.checked===true;
   $("sectionPageOptions")?.classList.toggle("disabled-options",!sectionMode);
   if($("fPageTransition"))$("fPageTransition").disabled=!sectionMode;
   if($("fPagePager"))$("fPagePager").disabled=!sectionMode;
+  if($("fSectionCoverEnabled"))$("fSectionCoverEnabled").disabled=!sectionMode;
+  updateSectionCoverAdminOptions();
 }
 
 function fillSiteCustomizationControls(){
@@ -655,6 +705,16 @@ function fillSiteCustomizationControls(){
   $("fNavigationModeSections").checked=l.navigationMode==="sections";
   $("fPageTransition").value=l.pageTransition||"fade";
   $("fPagePager").checked=l.pagePager!==false;
+  $("fSectionCoverEnabled").checked=l.sectionCoverEnabled!==false;
+  $("fSectionCoverStyle").value=l.sectionCoverStyle||"framed";
+  $("fSectionCoverSide").value=l.sectionCoverSide||"right";
+  $("fSectionCoverHeight").value=l.sectionCoverHeight||300;
+  $("fSectionCoverHeightNumber").value=l.sectionCoverHeight||300;
+  $("fSectionCoverZoom").value=l.sectionCoverZoom||100;
+  $("fSectionCoverZoomNumber").value=l.sectionCoverZoom||100;
+  $("fSectionCoverFade").value=l.sectionCoverFade||"medium";
+  $("fSectionCoverDetails").checked=l.sectionCoverDetails!==false;
+  $("fSectionCoverSocials").checked=l.sectionCoverSocials!==false;
   updateSectionPageAdminOptions();
 
   $("fActiveNav").checked=e.activeNav;
@@ -714,6 +774,14 @@ function syncSiteCustomizationFromControls(){
   l.navigationMode=$("fNavigationModeSections").checked?"sections":"single";
   l.pageTransition=$("fPageTransition").value;
   l.pagePager=$("fPagePager").checked;
+  l.sectionCoverEnabled=$("fSectionCoverEnabled").checked;
+  l.sectionCoverStyle=$("fSectionCoverStyle").value;
+  l.sectionCoverSide=$("fSectionCoverSide").value;
+  l.sectionCoverHeight=clampNumber($("fSectionCoverHeightNumber").value||$("fSectionCoverHeight").value,220,420,300);
+  l.sectionCoverZoom=clampNumber($("fSectionCoverZoomNumber").value||$("fSectionCoverZoom").value,70,170,100);
+  l.sectionCoverFade=$("fSectionCoverFade").value;
+  l.sectionCoverDetails=$("fSectionCoverDetails").checked;
+  l.sectionCoverSocials=$("fSectionCoverSocials").checked;
 
   const e=currentContent.siteSettings.experience;
   e.activeNav=$("fActiveNav").checked;
@@ -865,7 +933,7 @@ function normalizeThesis(content){
 }
 
 
-const BUILDER_SETTINGS_SCHEMA_VERSION=3;
+const BUILDER_SETTINGS_SCHEMA_VERSION=5;
 let savedBuilderSettingsSnapshot=null;
 
 function deepCloneSafe(value){
@@ -2255,6 +2323,8 @@ syncRangeNumber("fLayoutGap","fLayoutGapNumber",20,100,58);
 syncRangeNumber("fSectionSpacing","fSectionSpacingNumber",20,90,40);
 syncRangeNumber("fCardRadius","fCardRadiusNumber",0,28,11);
 syncRangeNumber("fPortraitSize","fPortraitSizeNumber",140,250,190);
+syncRangeNumber("fSectionCoverHeight","fSectionCoverHeightNumber",220,420,300);
+syncRangeNumber("fSectionCoverZoom","fSectionCoverZoomNumber",70,170,100);
 
 $("resetLayoutStyleBtn")?.addEventListener("click",resetLayoutStyleControls);
 $("resetSectionStructureBtn")?.addEventListener("click",resetSectionStructure);
@@ -2284,5 +2354,18 @@ bindAdvancedAdminSuite();
 });
 $("fPageTransition")?.addEventListener("change",()=>scheduleAdminPreview(true));
 $("fPagePager")?.addEventListener("change",()=>scheduleAdminPreview(true));
+
+
+$("fSectionCoverEnabled")?.addEventListener("change",()=>{
+  updateSectionCoverAdminOptions();
+  scheduleAdminPreview(true);
+});
+["fSectionCoverStyle","fSectionCoverSide","fSectionCoverFade","fSectionCoverDetails","fSectionCoverSocials"].forEach(id=>{
+  $(id)?.addEventListener("change",()=>scheduleAdminPreview(true));
+});
+["fSectionCoverHeight","fSectionCoverHeightNumber","fSectionCoverZoom","fSectionCoverZoomNumber"].forEach(id=>{
+  $(id)?.addEventListener("input",()=>scheduleAdminPreview());
+});
+$("resetSectionCoverBtn")?.addEventListener("click",resetSectionCoverControls);
 
 boot();
