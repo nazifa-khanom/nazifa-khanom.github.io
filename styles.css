@@ -2645,3 +2645,22 @@ html[data-navigation-mode="sections"][data-section-page="inner"][data-section-co
   html[data-navigation-mode="sections"][data-section-page="inner"][data-section-cover="on"][data-cover-photo-fit="full"] body:not(.admin-body) .section-cover-photo-layer-img{height:94%!important}
   html[data-navigation-mode="sections"][data-section-page="inner"][data-section-cover="on"] body:not(.admin-body) .sidebar>:not(.portrait):not(.section-cover-photo-layer){width:100%!important;margin-left:0!important;margin-right:0!important}
 }
+
+
+/* =========================================================
+   HOME PROFILE SAFETY FIX
+   The inner-page cover photo layer must never participate in Home layout.
+   ========================================================= */
+.section-cover-photo-layer{
+  display:none!important;
+}
+html[data-navigation-mode="sections"][data-section-page="inner"][data-section-cover="on"] body:not(.admin-body) .sidebar > .section-cover-photo-layer{
+  display:flex!important;
+}
+html[data-section-page="home"] body:not(.admin-body) .sidebar{
+  background-image:none!important;
+}
+html[data-section-page="home"] body:not(.admin-body) .sidebar::before,
+html[data-section-page="home"] body:not(.admin-body) .sidebar::after{
+  content:none!important;
+}
