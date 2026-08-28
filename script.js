@@ -1160,6 +1160,15 @@ function normalize(d){
   d.contact=d.contact||{};d.contact.media=d.contact.media||[];
   return d;
 }
+
+function releaseSiteBoot(){
+  requestAnimationFrame(()=>{
+    const root=document.documentElement;
+    root.classList.remove("site-booting");
+    root.classList.add("site-ready");
+  });
+}
+
 async function loadContent(){
   let data=structuredClone(DEFAULT_CONTENT);
   try{
@@ -1167,6 +1176,7 @@ async function loadContent(){
     if(!error&&row?.content&&Object.keys(row.content).length)data=merge(DEFAULT_CONTENT,row.content);
   }catch(e){console.error(e)}
   render(normalize(data));
+  releaseSiteBoot();
 }
 
 function profileIcon(type){
@@ -1519,6 +1529,7 @@ document.addEventListener("click",e=>{
 $("year").textContent=new Date().getFullYear();
 if(IS_ADMIN_PREVIEW){
   render(normalize(structuredClone(DEFAULT_CONTENT)));
+  releaseSiteBoot();
 }else{
   loadContent();
 }
