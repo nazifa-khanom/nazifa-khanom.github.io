@@ -52,6 +52,7 @@ const DEFAULT_CONTENT={
       "media": []
     }
   ],
+  "academicActivities": [],
   "skills": [
     {
       "category": "Simulation",
@@ -128,7 +129,8 @@ const DEFAULT_SECTION_HEADINGS={
   research:{title:"Research Interests",subtitle:"What I work on"},
   thesis:{title:"Undergraduate Thesis",subtitle:"Research Thesis"},
   publications:{title:"Publications",subtitle:"Research output"},
-  projects:{title:"Projects",subtitle:"Selected work"},
+  projects:{title:"Projects & Simulations",subtitle:"Selected technical and computational work"},
+  activities:{title:"Academic Activities",subtitle:"Presentations, training, and recognition"},
   skills:{title:"Skills",subtitle:"Research toolkit"},
   education:{title:"Education",subtitle:"Academic background"},
   contact:{title:"Contact",subtitle:"Interested in computational materials and nanoscale mechanics?"},
@@ -490,11 +492,11 @@ function undoTypographyControls(){
   setStatus("Unsaved typography changes were undone.");
 }
 
-const SITE_SECTION_KEYS=["about","research","thesis","publications","projects","skills","education","contact","cv"];
+const SITE_SECTION_KEYS=["about","research","thesis","publications","projects","activities","skills","education","contact","cv"];
 const DEFAULT_SITE_SETTINGS={
-  sectionOrder:["about","research","thesis","publications","projects","skills","education","contact","cv"],
+  sectionOrder:["about","research","thesis","publications","projects","activities","skills","education","contact","cv"],
   sectionVisibility:{
-    about:true,research:true,thesis:true,publications:true,projects:true,skills:true,education:true,contact:true,cv:true
+    about:true,research:true,thesis:true,publications:true,projects:true,activities:true,skills:true,education:true,contact:true,cv:true
   },
   layout:{
     maxWidth:1180,
@@ -550,7 +552,13 @@ const SITE_FONT_PAIRS={
 function normalizeSiteSettings(content){
   const raw=(content.siteSettings&&typeof content.siteSettings==="object")?content.siteSettings:{};
   const rawOrder=Array.isArray(raw.sectionOrder)?raw.sectionOrder.filter(x=>SITE_SECTION_KEYS.includes(x)):[];
-  const order=[...new Set([...rawOrder,...SITE_SECTION_KEYS])];
+  const mergedOrder=[...new Set([...rawOrder,...SITE_SECTION_KEYS])];
+  const order=rawOrder.includes("activities")?mergedOrder:(()=>{
+    const next=mergedOrder.filter(k=>k!=="activities");
+    const projectIndex=next.indexOf("projects");
+    next.splice(projectIndex>=0?projectIndex+1:next.length,0,"activities");
+    return next;
+  })();
   const rawVis=(raw.sectionVisibility&&typeof raw.sectionVisibility==="object")?raw.sectionVisibility:{};
   const l=(raw.layout&&typeof raw.layout==="object")?raw.layout:{};
   const e=(raw.experience&&typeof raw.experience==="object")?raw.experience:{};
@@ -861,13 +869,14 @@ function setSectionVisibility(key,visible){
 function renderRepeaterType(type){
   if(type==="publication")renderPublicationsEditor();
   if(type==="project")renderProjectsEditor();
+  if(type==="activity")renderActivitiesEditor();
   if(type==="skill")renderSkillsEditor();
   if(type==="education")renderEducationEditor();
 }
 
 function moveRepeaterItem(type,index,delta){
   syncAllForms();
-  const map={publication:"publications",project:"projects",skill:"skills",education:"education"};
+  const map={publication:"publications",project:"projects",activity:"academicActivities",skill:"skills",education:"education"};
   const arr=currentContent[map[type]];
   if(!Array.isArray(arr))return;
   const j=index+delta;
@@ -960,7 +969,7 @@ function normalizeThesis(content){
 }
 
 
-const BUILDER_SETTINGS_SCHEMA_VERSION=7;
+const BUILDER_SETTINGS_SCHEMA_VERSION=8;
 let savedBuilderSettingsSnapshot=null;
 
 function deepCloneSafe(value){
@@ -1317,7 +1326,7 @@ function bindAdvancedAdminSuite(){
 
   const mutationSelectors=[
     "[data-remove]","[data-move-item]","[data-section-move]","[data-media-remove]","[data-media-add-link]",
-    "#addPublicationBtn","#addProjectBtn","#addSkillGroupBtn","#addEducationBtn","#removeCvBtn",
+    "#addPublicationBtn","#addProjectBtn","#addActivityBtn","#addSkillGroupBtn","#addEducationBtn","#removeCvBtn",
     "#resetLayoutStyleBtn","#resetSectionStructureBtn","#resetExperienceBtn",
     "#resetTypographyBtn","#resetCustomThemeBtn"
   ].join(",");
@@ -1344,6 +1353,45 @@ function bindAdvancedAdminSuite(){
     checkpointAfterEditorChange();
   });
   setPreviewDevice("desktop");
+}
+
+
+function normalizeAcademicArchitecture(content){
+  const marker=content?.builderState?.academicArchitectureV1===true;
+  const existingActivities=Array.isArray(content.academicActivities)?content.academicActivities:[];
+  content.academicActivities=existingActivities.map(x=>({
+    category:String(x?.category||"Presentation & Poster"),
+    title:String(x?.title||""),
+    organization:String(x?.organization||""),
+    date:String(x?.date||""),
+    description:String(x?.description||""),
+    url:String(x?.url||""),
+    visible:x?.visible!==false,
+    media:Array.isArray(x?.media)?x.media:[]
+  }));
+  content.projects=(content.projects||[]).map(x=>({
+    ...x,
+    type:String(x?.type||""),
+    media:Array.isArray(x?.media)?x.media:[]
+  }));
+
+  if(!marker&&content.sectionHeadings?.projects?.title&&String(content.sectionHeadings.projects.title).trim()==="Projects"){
+    content.sectionHeadings.projects.title="Projects & Simulations";
+  }
+  return content;
+}
+
+function academicActivityHasContent(item){
+  return !!(item&&item.visible!==false&&(
+    String(item.title||"").trim()||String(item.description||"").trim()||
+    String(item.organization||"").trim()||String(item.date||"").trim()||
+    (Array.isArray(item.media)&&item.media.length)
+  ));
+}
+
+function sectionHasPublicContent(d,key){
+  if(key==="activities")return (d.academicActivities||[]).some(academicActivityHasContent);
+  return true;
 }
 
 const sb=window.supabase.createClient(window.SUPABASE_CONFIG.url,window.SUPABASE_CONFIG.key);
@@ -1428,6 +1476,7 @@ function merge(base,extra){
   return extra??base;
 }
 function normalizeMedia(content){
+  normalizeAcademicArchitecture(content);
   normalizeThesis(content);
   normalizeSiteSettings(content);
   normalizeCustomTheme(content);
@@ -1436,7 +1485,8 @@ function normalizeMedia(content){
   content.sectionMedia=content.sectionMedia||{};
   content.sectionMedia.profile=Array.isArray(content.sectionMedia.profile)?content.sectionMedia.profile:[];
   content.publications=(content.publications||[]).map(x=>({...x,media:Array.isArray(x.media)?x.media:[]}));
-  content.projects=(content.projects||[]).map(x=>({...x,media:Array.isArray(x.media)?x.media:[]}));
+  content.projects=(content.projects||[]).map(x=>({...x,type:String(x.type||""),media:Array.isArray(x.media)?x.media:[]}));
+  content.academicActivities=(content.academicActivities||[]).map(x=>({...x,media:Array.isArray(x.media)?x.media:[]}));
   content.skills=(content.skills||[]).map(x=>({...x,media:Array.isArray(x.media)?x.media:[]}));
   content.education=(content.education||[]).map(x=>({...x,media:Array.isArray(x.media)?x.media:[]}));
   content.contact=content.contact||{};
@@ -1451,6 +1501,7 @@ async function loadContent(){
   currentContent=Object.keys(rawContent).length?merge(DEFAULT_CONTENT,rawContent):structuredClone(DEFAULT_CONTENT);
   normalizeMedia(currentContent);
   ensureBuilderState(currentContent);
+  currentContent.builderState.academicArchitectureV1=true;
 
   // Snapshot the fully normalized settings. All future partial saves use this
   // as a safety net so an unrelated code update cannot drop another setting.
@@ -1490,6 +1541,8 @@ function fillForms(){
   $("fSectionPublicationsSubtitle").value=sections.publications.subtitle||"";
   $("fSectionProjectsTitle").value=sections.projects.title||"";
   $("fSectionProjectsSubtitle").value=sections.projects.subtitle||"";
+  $("fSectionActivitiesTitle").value=sections.activities.title||"";
+  $("fSectionActivitiesSubtitle").value=sections.activities.subtitle||"";
   $("fSectionSkillsTitle").value=sections.skills.title||"";
   $("fSectionSkillsSubtitle").value=sections.skills.subtitle||"";
   $("fSectionEducationTitle").value=sections.education.title||"";
@@ -1545,6 +1598,7 @@ function fillForms(){
 function renderAllEditors(){
   renderPublicationsEditor();
   renderProjectsEditor();
+  renderActivitiesEditor();
   renderSkillsEditor();
   renderEducationEditor();
   $("profileMediaEditor").innerHTML=mediaEditor("profile",currentContent.sectionMedia?.profile||[],"Profile / About media");
@@ -1566,7 +1620,7 @@ function repeatBlock(type,i,title,fields,media=[],visible=true){
     <div class="form-grid">
       ${fields.map(f=>`<div class="field ${f.full?"full":""}"><label>${esc(f.label)}</label>${
         f.kind==="textarea"?`<textarea data-k="${f.key}">${esc(f.value||"")}</textarea>`:
-        f.kind==="select"?`<select data-k="${f.key}">${["","Published","Accepted","In press","Submitted","Under review","Preprint","Conference"].map(o=>`<option ${o===f.value?"selected":""}>${esc(o)}</option>`).join("")}</select>`:
+        f.kind==="select"?`<select data-k="${f.key}">${(f.options||["","Published","Accepted","In press","Submitted","Under review","Preprint","Conference"]).map(o=>`<option ${o===f.value?"selected":""}>${esc(o)}</option>`).join("")}</select>`:
         `<input data-k="${f.key}" value="${esc(f.value||"")}">`
       }</div>`).join("")}
     </div>
@@ -1583,10 +1637,23 @@ function renderPublicationsEditor(){
   ],p.media||[],p.visible!==false)).join("")||`<div class="empty-state">No publications added yet.</div>`;
 }
 function renderProjectsEditor(){
-  $("projectsEditor").innerHTML=(currentContent.projects||[]).map((p,i)=>repeatBlock("project",i,`Project ${i+1}`,[
-    {label:"Project title",key:"title",value:p.title,full:true},{label:"Description",key:"description",value:p.description,kind:"textarea",full:true},
-    {label:"Tools / metadata",key:"meta",value:p.meta},{label:"Project URL",key:"url",value:p.url}
-  ],p.media||[],p.visible!==false)).join("")||`<div class="empty-state">No projects added.</div>`;
+  $("projectsEditor").innerHTML=(currentContent.projects||[]).map((p,i)=>repeatBlock("project",i,`Project / Simulation ${i+1}`,[
+    {label:"Project title",key:"title",value:p.title,full:true},
+    {label:"Type",key:"type",value:p.type||"",kind:"select",options:["","Research Project","Simulation","Engineering Project","Course Project"]},
+    {label:"Tools / metadata",key:"meta",value:p.meta},
+    {label:"Description",key:"description",value:p.description,kind:"textarea",full:true},
+    {label:"Project URL",key:"url",value:p.url,full:true}
+  ],p.media||[],p.visible!==false)).join("")||`<div class="empty-state">No projects or simulations added.</div>`;
+}
+function renderActivitiesEditor(){
+  $("activitiesEditor").innerHTML=(currentContent.academicActivities||[]).map((item,i)=>repeatBlock("activity",i,`Academic activity ${i+1}`,[
+    {label:"Category",key:"category",value:item.category||"Presentation & Poster",kind:"select",options:["Presentation & Poster","Certification & Training","Award & Honor"]},
+    {label:"Date / year",key:"date",value:item.date||""},
+    {label:"Title",key:"title",value:item.title,full:true},
+    {label:"Venue / issuer / organization",key:"organization",value:item.organization,full:true},
+    {label:"Description",key:"description",value:item.description,kind:"textarea",full:true},
+    {label:"Relevant URL / credential link",key:"url",value:item.url,full:true}
+  ],item.media||[],item.visible!==false)).join("")||`<div class="empty-state">No academic activities added yet. Add presentations, certifications/training, or awards here.</div>`;
 }
 function renderSkillsEditor(){
   $("skillsEditor").innerHTML=(currentContent.skills||[]).map((g,i)=>repeatBlock("skill",i,`Skill group ${i+1}`,[
@@ -1721,7 +1788,10 @@ $("addPublicationBtn").addEventListener("click",()=>{
   renderPublicationsEditor();
 });
 $("addProjectBtn").addEventListener("click",()=>{
-  syncAllForms();currentContent.projects.push({title:"",description:"",meta:"",url:"",visible:true,media:[]});renderProjectsEditor();
+  syncAllForms();currentContent.projects.push({title:"",type:"",description:"",meta:"",url:"",visible:true,media:[]});renderProjectsEditor();
+});
+$("addActivityBtn").addEventListener("click",()=>{
+  syncAllForms();currentContent.academicActivities.push({category:"Presentation & Poster",title:"",organization:"",date:"",description:"",url:"",visible:true,media:[]});renderActivitiesEditor();
 });
 $("addSkillGroupBtn").addEventListener("click",()=>{
   syncAllForms();currentContent.skills.push({category:"",items:[],visible:true,media:[]});renderSkillsEditor();
@@ -1742,10 +1812,11 @@ document.addEventListener("click",async e=>{
   if(b){
     syncAllForms();
     const[type,idxs]=b.dataset.remove.split(":");const i=Number(idxs);
-    const map={publication:"publications",project:"projects",skill:"skills",education:"education"};
+    const map={publication:"publications",project:"projects",activity:"academicActivities",skill:"skills",education:"education"};
     currentContent[map[type]].splice(i,1);
     if(type==="publication")renderPublicationsEditor();
     if(type==="project")renderProjectsEditor();
+    if(type==="activity")renderActivitiesEditor();
     if(type==="skill")renderSkillsEditor();
     if(type==="education")renderEducationEditor();
     return;
@@ -1794,6 +1865,7 @@ function syncAllForms(){
     thesis:{title:$("fSectionThesisTitle").value.trim(),subtitle:$("fSectionThesisSubtitle").value.trim()},
     publications:{title:$("fSectionPublicationsTitle").value.trim(),subtitle:$("fSectionPublicationsSubtitle").value.trim()},
     projects:{title:$("fSectionProjectsTitle").value.trim(),subtitle:$("fSectionProjectsSubtitle").value.trim()},
+    activities:{title:$("fSectionActivitiesTitle").value.trim(),subtitle:$("fSectionActivitiesSubtitle").value.trim()},
     skills:{title:$("fSectionSkillsTitle").value.trim(),subtitle:$("fSectionSkillsSubtitle").value.trim()},
     education:{title:$("fSectionEducationTitle").value.trim(),subtitle:$("fSectionEducationSubtitle").value.trim()},
     contact:{title:$("fSectionContactTitle").value.trim(),subtitle:$("fContactHeadline").value.trim()},
@@ -1853,8 +1925,13 @@ function readRepeaters(){
 
   currentContent.projects=[...document.querySelectorAll("[data-project]")].map((r,i)=>{
     const old=currentContent.projects[i]||{};
-    return {title:get(r,"title"),description:get(r,"description"),meta:get(r,"meta"),url:get(r,"url"),visible:r.querySelector("[data-item-visible]")?.checked!==false,media:old.media||[]};
+    return {title:get(r,"title"),type:get(r,"type"),description:get(r,"description"),meta:get(r,"meta"),url:get(r,"url"),visible:r.querySelector("[data-item-visible]")?.checked!==false,media:old.media||[]};
   }).filter(x=>x.title||x.description||x.media.length);
+
+  currentContent.academicActivities=[...document.querySelectorAll("[data-activity]")].map((r,i)=>{
+    const old=currentContent.academicActivities[i]||{};
+    return {category:get(r,"category")||"Presentation & Poster",title:get(r,"title"),organization:get(r,"organization"),date:get(r,"date"),description:get(r,"description"),url:get(r,"url"),visible:r.querySelector("[data-item-visible]")?.checked!==false,media:old.media||[]};
+  }).filter(x=>x.title||x.description||x.organization||x.date||x.media.length);
 
   currentContent.skills=[...document.querySelectorAll("[data-skill]")].map((r,i)=>{
     const old=currentContent.skills[i]||{};
@@ -1913,7 +1990,7 @@ function getOwnerMedia(owner){
 
   const[type,idxs]=owner.split(":");
   const i=Number(idxs);
-  const map={publication:"publications",project:"projects",skill:"skills",education:"education"};
+  const map={publication:"publications",project:"projects",activity:"academicActivities",skill:"skills",education:"education"};
   const key=map[type];
   if(!key)return [];
 
@@ -1921,7 +1998,8 @@ function getOwnerMedia(owner){
 
   const blankFactories={
     publication:()=>({title:"",authors:"",venue:"",year:"",status:"",doi:"",url:"",description:"",media:[]}),
-    project:()=>({title:"",description:"",meta:"",url:"",media:[]}),
+    project:()=>({title:"",type:"",description:"",meta:"",url:"",media:[]}),
+    activity:()=>({category:"Presentation & Poster",title:"",organization:"",date:"",description:"",url:"",media:[]}),
     skill:()=>({category:"",items:[],media:[]}),
     education:()=>({period:"",degree:"",institution:"",description:"",media:[]})
   };
@@ -1938,7 +2016,7 @@ function ownerFolder(owner){
   if(owner==="thesis")return "thesis";
   if(owner==="contact")return "contact";
   const type=owner.split(":")[0];
-  return {publication:"publications",project:"projects",skill:"skills",education:"education"}[type]||"misc";
+  return {publication:"publications",project:"projects",activity:"activities",skill:"skills",education:"education"}[type]||"misc";
 }
 function fileType(file){
   if(["image/jpeg","image/png","image/webp"].includes(file.type))return"image";
