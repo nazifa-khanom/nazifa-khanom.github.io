@@ -16,6 +16,7 @@ const DEFAULT_CONTENT={
     "Crystallographic effects on mechanical behaviour",
     "Scientific computing and research data analysis"
   ],
+  "researchInterestGroups":null,
   "featuredResearch": {
     "title": "Radially graded Cu–Ni nanowires under tensile loading",
     "description": "A classical molecular dynamics study of how radial composition grading, crystallographic orientation, temperature, and surface defects influence tensile behaviour and deformation mechanisms in Cu–Ni nanowires.",
@@ -1153,7 +1154,7 @@ function normalizeThesis(content){
 }
 
 
-const BUILDER_SETTINGS_SCHEMA_VERSION=16;
+const BUILDER_SETTINGS_SCHEMA_VERSION=17;
 let savedBuilderSettingsSnapshot=null;
 
 function deepCloneSafe(value){
@@ -1238,6 +1239,31 @@ function normalizeAcademicArchitecture(content){
   return content;
 }
 
+function normalizeResearchInterests(content){
+  const cleanList=value=>(Array.isArray(value)?value:[])
+    .map(x=>String(x??"").trim())
+    .filter(Boolean);
+
+  const legacy=cleanList(content.researchInterests);
+  const raw=(content.researchInterestGroups&&typeof content.researchInterestGroups==="object"&&!Array.isArray(content.researchInterestGroups))
+    ?content.researchInterestGroups:null;
+
+  const hasStructured=!!raw&&(
+    Array.isArray(raw.primary)||
+    Array.isArray(raw.additional)
+  );
+
+  const groups=hasStructured
+    ?{primary:cleanList(raw.primary),additional:cleanList(raw.additional)}
+    :{primary:legacy,additional:[]};
+
+  content.researchInterestGroups=groups;
+
+  /* Keep the original flat field synchronized for old backups / older code. */
+  content.researchInterests=[...groups.primary,...groups.additional];
+  return content;
+}
+
 function academicActivityHasContent(item){
   return !!(item&&item.visible!==false&&(
     String(item.title||"").trim()||String(item.description||"").trim()||
@@ -1267,6 +1293,7 @@ function merge(base,extra){
 function normalize(d){
   ensureBuilderState(d);
   normalizeAcademicArchitecture(d);
+  normalizeResearchInterests(d);
   normalizeThesis(d);
   normalizeSiteSettings(d);
   normalizeCustomTheme(d);
@@ -1443,7 +1470,17 @@ function render(d){
   }
 
   $("profileMedia").innerHTML=mediaHtml(d.sectionMedia?.profile||[]);
-  $("researchInterests").innerHTML=(d.researchInterests||[]).map(x=>`<li>${esc(x)}</li>`).join("");
+  normalizeResearchInterests(d);
+  const researchGroups=d.researchInterestGroups;
+  const renderResearchGroup=(key,groupId,listId)=>{
+    const items=researchGroups[key]||[];
+    const group=$(groupId);
+    const list=$(listId);
+    if(group)group.classList.toggle("hidden",!items.length);
+    if(list)list.innerHTML=items.map(x=>`<li>${esc(x)}</li>`).join("");
+  };
+  renderResearchGroup("primary","primaryResearchGroup","primaryResearchInterests");
+  renderResearchGroup("additional","additionalResearchGroup","additionalResearchInterests");
 
   normalizeThesis(d);
   $("thesisTitle").textContent=d.thesis.title||"";
