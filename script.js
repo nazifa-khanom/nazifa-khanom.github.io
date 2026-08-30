@@ -1276,7 +1276,7 @@ function normalizeMediaDisplayList(value){
 }
 
 
-const BUILDER_SETTINGS_SCHEMA_VERSION=19;
+const BUILDER_SETTINGS_SCHEMA_VERSION=20;
 let savedBuilderSettingsSnapshot=null;
 
 function deepCloneSafe(value){
@@ -1352,6 +1352,7 @@ function normalizeAcademicArchitecture(content){
   content.projects=(content.projects||[]).map(x=>({
     ...x,
     type:String(x?.type||""),
+    contribution:String(x?.contribution||""),
     media:Array.isArray(x?.media)?x.media:[]
   }));
 
@@ -1446,7 +1447,7 @@ function normalize(d){
   d.sectionMedia.profile=normalizeMediaDisplayList(d.sectionMedia.profile);
   d.featuredResearch=d.featuredResearch||{};d.featuredResearch.media=normalizeMediaDisplayList(d.featuredResearch.media);
   d.publications=(d.publications||[]).map(normalizePublicationRecord);
-  d.projects=(d.projects||[]).map(x=>({...x,media:normalizeMediaDisplayList(x.media)}));
+  d.projects=(d.projects||[]).map(x=>({...x,contribution:String(x.contribution||""),media:normalizeMediaDisplayList(x.media)}));
   d.skills=(d.skills||[]).map(x=>({...x,media:normalizeMediaDisplayList(x.media)}));
   d.education=(d.education||[]).map(x=>({...x,cgpa:String(x?.cgpa??""),cgpaSubtitle:String(x?.cgpaSubtitle??""),courses:Array.isArray(x?.courses)?x.courses.map(v=>String(v).trim()).filter(Boolean):String(x?.courses??"").split(/\r?\n|,/).map(v=>v.trim()).filter(Boolean),media:normalizeMediaDisplayList(x.media)}));
   d.contact=d.contact||{};d.contact.media=normalizeMediaDisplayList(d.contact.media);
@@ -1667,6 +1668,7 @@ function render(d){
     <article class="card">
       ${p.type?`<span class="project-type-badge">${esc(p.type)}</span>`:""}
       <h3>${esc(p.title||"")}</h3>
+      ${p.contribution?`<p class="project-contribution"><strong>Role / My Contribution:</strong> ${esc(p.contribution)}</p>`:""}
       <p class="muted">${esc(p.description||"")}</p>
       ${safeUrl(p.url)?`<a class="text-link" href="${escAttr(safeUrl(p.url))}" target="_blank" rel="noopener">View project ↗</a>`:""}
       <div class="item-media">${mediaHtml(p.media||[])}</div>
