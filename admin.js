@@ -514,7 +514,7 @@ const COVER_SECTION_KEYS=["research","thesis","publications","projects","activit
 const SIDEBAR_SECTION_KEYS=[...COVER_SECTION_KEYS];
 const CARD_STYLE_SECTION_KEYS=["thesis","publications","projects","activities","skills","education","contact"];
 const CARD_STYLE_VALUES=["classic","clean","outline","soft","accent","elevated"];
-const CARD_DESIGN_VALUES=["standard","editorial","banded","ledger","spotlight","framed"];
+const CARD_DESIGN_VALUES=["standard","editorial","banded","ledger","spotlight","framed","activity-split","activity-showcase"];
 const DEFAULT_SITE_SETTINGS={
   sectionOrder:["about","research","thesis","publications","projects","activities","skills","education","contact","cv"],
   sectionVisibility:{
@@ -534,6 +534,7 @@ const DEFAULT_SITE_SETTINGS={
     portraitPosition:"center",
     projectColumns:3,
     projectFlow:"grid",
+    activityColumns:2,
     skillsColumns:3,
     fontPair:"classic",
     shadow:"theme",
@@ -651,6 +652,7 @@ function normalizeSiteSettings(content){
       portraitPosition:["center","top","bottom","left","right"].includes(l.portraitPosition)?l.portraitPosition:DEFAULT_SITE_SETTINGS.layout.portraitPosition,
       projectColumns:[1,2,3].includes(Number(l.projectColumns))?Number(l.projectColumns):DEFAULT_SITE_SETTINGS.layout.projectColumns,
       projectFlow:["grid","masonry"].includes(l.projectFlow)?l.projectFlow:DEFAULT_SITE_SETTINGS.layout.projectFlow,
+      activityColumns:[1,2,3].includes(Number(l.activityColumns))?Number(l.activityColumns):DEFAULT_SITE_SETTINGS.layout.activityColumns,
       skillsColumns:[1,2,3].includes(Number(l.skillsColumns))?Number(l.skillsColumns):DEFAULT_SITE_SETTINGS.layout.skillsColumns,
       fontPair:Object.prototype.hasOwnProperty.call(SITE_FONT_PAIRS,l.fontPair)?l.fontPair:DEFAULT_SITE_SETTINGS.layout.fontPair,
       shadow:["theme","none","subtle","medium"].includes(l.shadow)?l.shadow:DEFAULT_SITE_SETTINGS.layout.shadow,
@@ -809,11 +811,13 @@ function fillSiteCustomizationControls(){
   $("fPortraitPosition").value=l.portraitPosition||"center";
   $("fProjectColumns").value=String(l.projectColumns);
   if($("fProjectFlow"))$("fProjectFlow").value=l.projectFlow||"grid";
+  if($("fActivityColumns"))$("fActivityColumns").value=String(l.activityColumns);
   $("fSkillsColumns").value=String(l.skillsColumns);
   $("fFontPair").value=l.fontPair;
   $("fShadow").value=l.shadow;
   const cardSection=(CARD_STYLE_SECTION_KEYS.includes($("fCardStyleSection")?.value)?$("fCardStyleSection").value:"skills");
   if($("fCardStyleSection"))$("fCardStyleSection").value=cardSection;
+  updateCardDesignOptionAvailability();
   if($("fCardStyleValue"))$("fCardStyleValue").value=l.cardStyles?.[cardSection]||DEFAULT_SITE_SETTINGS.layout.cardStyles[cardSection];
   if($("fCardDesignValue"))$("fCardDesignValue").value=l.cardDesigns?.[cardSection]||DEFAULT_SITE_SETTINGS.layout.cardDesigns[cardSection];
   $("fStickySidebar").checked=l.stickySidebar;
@@ -858,11 +862,26 @@ function sectionDisplayName(key){
   return headings[key]?.title||DEFAULT_SECTION_HEADINGS[key]?.title||key;
 }
 
+function updateCardDesignOptionAvailability(){
+  const section=$("fCardStyleSection")?.value||"skills";
+  const select=$("fCardDesignValue");
+  if(!select)return;
+  select.querySelectorAll("option[data-activity-only]").forEach(option=>{
+    const allowed=section==="activities";
+    option.hidden=!allowed;
+    option.disabled=!allowed;
+  });
+}
+
 function refreshCardStyleMiniControl(){
   normalizeSiteSettings(currentContent);
   const section=$("fCardStyleSection")?.value||"skills";
+  updateCardDesignOptionAvailability();
   if($("fCardStyleValue"))$("fCardStyleValue").value=currentContent.siteSettings.layout.cardStyles?.[section]||DEFAULT_SITE_SETTINGS.layout.cardStyles[section]||"classic";
-  if($("fCardDesignValue"))$("fCardDesignValue").value=currentContent.siteSettings.layout.cardDesigns?.[section]||DEFAULT_SITE_SETTINGS.layout.cardDesigns[section]||"standard";
+  if($("fCardDesignValue")){
+    const saved=currentContent.siteSettings.layout.cardDesigns?.[section]||DEFAULT_SITE_SETTINGS.layout.cardDesigns[section]||"standard";
+    $("fCardDesignValue").value=(section==="activities"||!String(saved).startsWith("activity-"))?saved:"standard";
+  }
 }
 
 function storeCardStyleMiniControl(){
@@ -922,6 +941,7 @@ function syncSiteCustomizationFromControls(){
   l.portraitPosition=$("fPortraitPosition").value;
   l.projectColumns=Number($("fProjectColumns").value);
   l.projectFlow=$("fProjectFlow")?.value==="masonry"?"masonry":"grid";
+  l.activityColumns=Number($("fActivityColumns")?.value||2);
   l.skillsColumns=Number($("fSkillsColumns").value);
   l.fontPair=$("fFontPair").value;
   l.shadow=$("fShadow").value;
@@ -960,7 +980,7 @@ function syncSiteCustomizationFromControls(){
 function resetLayoutStyleControls(){
   normalizeSiteSettings(currentContent);
   const l=currentContent.siteSettings.layout,d=DEFAULT_SITE_SETTINGS.layout;
-  Object.assign(l,{maxWidth:d.maxWidth,sidebarWidth:d.sidebarWidth,layoutGap:d.layoutGap,sectionSpacing:d.sectionSpacing,projectColumns:d.projectColumns,projectFlow:d.projectFlow,skillsColumns:d.skillsColumns,stickySidebar:d.stickySidebar});
+  Object.assign(l,{maxWidth:d.maxWidth,sidebarWidth:d.sidebarWidth,layoutGap:d.layoutGap,sectionSpacing:d.sectionSpacing,projectColumns:d.projectColumns,projectFlow:d.projectFlow,activityColumns:d.activityColumns??l.activityColumns,skillsColumns:d.skillsColumns,stickySidebar:d.stickySidebar});
   fillSiteCustomizationControls();
   setStatus("Layout reset to defaults. Other Appearance, Profile, Typography, Structure and Cover settings were kept.");
 }
@@ -1127,7 +1147,7 @@ function normalizeMediaDisplayList(value){
   return (Array.isArray(value)?value:[]).map(normalizeMediaDisplayItem);
 }
 
-const BUILDER_SETTINGS_SCHEMA_VERSION=22;
+const BUILDER_SETTINGS_SCHEMA_VERSION=23;
 let savedBuilderSettingsSnapshot=null;
 
 function deepCloneSafe(value){
@@ -1485,7 +1505,7 @@ const DESIGN_PRESETS={
     description:"Traditional academic profile with serif headings, balanced spacing and understated cards.",
     theme:"classic-brown",
     typography:{sectionTitleSize:44,sectionTitleColor:"",sectionSubtitleSize:24,sectionSubtitleColor:""},
-    layout:{maxWidth:1180,sidebarWidth:255,layoutGap:58,sectionSpacing:42,cardRadius:10,portraitSize:190,portraitShape:"slight",projectColumns:3,skillsColumns:3,fontPair:"classic",shadow:"theme",stickySidebar:true},
+    layout:{maxWidth:1180,sidebarWidth:255,layoutGap:58,sectionSpacing:42,cardRadius:10,portraitSize:190,portraitShape:"slight",projectColumns:3,activityColumns:2,skillsColumns:3,fontPair:"classic",shadow:"theme",stickySidebar:true},
     experience:{activeNav:true,animations:"subtle",backToTop:true,lightbox:true,smoothScroll:true,copyButtons:true,navHighlightStyle:"underline",socialStyle:"labels"}
   },
   "minimal-research":{
@@ -1493,7 +1513,7 @@ const DESIGN_PRESETS={
     description:"Clean, low-distraction layout with tighter spacing, flatter cards and a research-first feel.",
     theme:"soft-beige",
     typography:{sectionTitleSize:42,sectionTitleColor:"",sectionSubtitleSize:21,sectionSubtitleColor:""},
-    layout:{maxWidth:1120,sidebarWidth:240,layoutGap:48,sectionSpacing:34,cardRadius:5,portraitSize:180,portraitShape:"slight",projectColumns:2,skillsColumns:3,fontPair:"humanist",shadow:"none",stickySidebar:true},
+    layout:{maxWidth:1120,sidebarWidth:240,layoutGap:48,sectionSpacing:34,cardRadius:5,portraitSize:180,portraitShape:"slight",projectColumns:2,activityColumns:2,skillsColumns:3,fontPair:"humanist",shadow:"none",stickySidebar:true},
     experience:{activeNav:true,animations:"off",backToTop:true,lightbox:true,smoothScroll:true,copyButtons:true,navHighlightStyle:"text",socialStyle:"icons"}
   },
   "modern-portfolio":{
@@ -1501,7 +1521,7 @@ const DESIGN_PRESETS={
     description:"Contemporary cards, wider content, rounded geometry and stronger visual interaction.",
     theme:"cobalt-white",
     typography:{sectionTitleSize:46,sectionTitleColor:"",sectionSubtitleSize:24,sectionSubtitleColor:""},
-    layout:{maxWidth:1280,sidebarWidth:270,layoutGap:62,sectionSpacing:46,cardRadius:18,portraitSize:200,portraitShape:"rounded",projectColumns:3,skillsColumns:3,fontPair:"modern",shadow:"medium",stickySidebar:true},
+    layout:{maxWidth:1280,sidebarWidth:270,layoutGap:62,sectionSpacing:46,cardRadius:18,portraitSize:200,portraitShape:"rounded",projectColumns:3,activityColumns:2,skillsColumns:3,fontPair:"modern",shadow:"medium",stickySidebar:true},
     experience:{activeNav:true,animations:"normal",backToTop:true,lightbox:true,smoothScroll:true,copyButtons:true,navHighlightStyle:"pill",socialStyle:"labels"}
   },
   "editorial-scholar":{
@@ -1509,7 +1529,7 @@ const DESIGN_PRESETS={
     description:"Publication-oriented serif presentation with restrained geometry and strong typographic hierarchy.",
     theme:"burgundy",
     typography:{sectionTitleSize:46,sectionTitleColor:"",sectionSubtitleSize:23,sectionSubtitleColor:""},
-    layout:{maxWidth:1100,sidebarWidth:250,layoutGap:54,sectionSpacing:44,cardRadius:6,portraitSize:185,portraitShape:"slight",projectColumns:2,skillsColumns:2,fontPair:"editorial",shadow:"subtle",stickySidebar:true},
+    layout:{maxWidth:1100,sidebarWidth:250,layoutGap:54,sectionSpacing:44,cardRadius:6,portraitSize:185,portraitShape:"slight",projectColumns:2,activityColumns:2,skillsColumns:2,fontPair:"editorial",shadow:"subtle",stickySidebar:true},
     experience:{activeNav:true,animations:"subtle",backToTop:true,lightbox:true,smoothScroll:true,copyButtons:true,navHighlightStyle:"underline",socialStyle:"labels"}
   },
   "compact-academic":{
@@ -1517,7 +1537,7 @@ const DESIGN_PRESETS={
     description:"Denser layout for content-heavy profiles with compact sections and efficient use of space.",
     theme:"deep-navy",
     typography:{sectionTitleSize:40,sectionTitleColor:"",sectionSubtitleSize:20,sectionSubtitleColor:""},
-    layout:{maxWidth:1180,sidebarWidth:230,layoutGap:40,sectionSpacing:28,cardRadius:8,portraitSize:170,portraitShape:"slight",projectColumns:3,skillsColumns:3,fontPair:"palatino",shadow:"subtle",stickySidebar:true},
+    layout:{maxWidth:1180,sidebarWidth:230,layoutGap:40,sectionSpacing:28,cardRadius:8,portraitSize:170,portraitShape:"slight",projectColumns:3,activityColumns:2,skillsColumns:3,fontPair:"palatino",shadow:"subtle",stickySidebar:true},
     experience:{activeNav:true,animations:"off",backToTop:true,lightbox:true,smoothScroll:true,copyButtons:true,navHighlightStyle:"text",socialStyle:"icons"}
   }
 };
