@@ -514,7 +514,7 @@ const COVER_SECTION_KEYS=["research","thesis","publications","projects","activit
 const SIDEBAR_SECTION_KEYS=[...COVER_SECTION_KEYS];
 const CARD_STYLE_SECTION_KEYS=["thesis","publications","projects","activities","skills","education","contact"];
 const CARD_STYLE_VALUES=["classic","clean","outline","soft","accent","elevated"];
-const CARD_DESIGN_VALUES=["standard","editorial","banded","ledger","spotlight","framed","activity-split","activity-showcase","activity-media-fill","activity-certificate-full"];
+const CARD_DESIGN_VALUES=["standard","editorial","banded","ledger","spotlight","framed","activity-split","activity-showcase","activity-media-fill","activity-certificate-full","activity-certificate-grid"];
 const DEFAULT_SITE_SETTINGS={
   sectionOrder:["about","research","thesis","publications","projects","activities","skills","education","contact","cv"],
   sectionVisibility:{
@@ -1162,7 +1162,7 @@ function normalizeMediaDisplayList(value){
   return (Array.isArray(value)?value:[]).map(normalizeMediaDisplayItem);
 }
 
-const BUILDER_SETTINGS_SCHEMA_VERSION=28;
+const BUILDER_SETTINGS_SCHEMA_VERSION=29;
 let savedBuilderSettingsSnapshot=null;
 
 function deepCloneSafe(value){
@@ -1676,7 +1676,7 @@ function normalizeActivityCategory(value){
 
 function normalizeActivityCardDesign(value){
   const design=String(value||"").trim();
-  return ["activity-split","activity-showcase","activity-media-fill","activity-certificate-full"].includes(design)?design:"";
+  return ["activity-split","activity-showcase","activity-media-fill","activity-certificate-full","activity-certificate-grid"].includes(design)?design:"";
 }
 
 function normalizeAcademicArchitecture(content){
@@ -2067,13 +2067,14 @@ function renderProjectsEditor(){
 }
 function activityCardStyleOptions(item){
   const category=normalizeActivityCategory(item?.category);
-  const inheritedLabel=category==="Certifications"?"Default — Certificate Card":"Default — Appearance setting";
+  const inheritedLabel=category==="Certifications"?"Default — Certification Grid":"Default — Appearance setting";
   return [
     {value:"",label:inheritedLabel},
     {value:"activity-split",label:"Activity Split"},
     {value:"activity-showcase",label:"Activity Showcase"},
     {value:"activity-media-fill",label:"Activity Media Fill"},
-    {value:"activity-certificate-full",label:"Certificate Card"}
+    {value:"activity-certificate-full",label:"Certificate Card"},
+    {value:"activity-certificate-grid",label:"Certification Grid"}
   ];
 }
 
@@ -2082,7 +2083,7 @@ function refreshActivityCardStyleDefaultLabel(row){
   const category=normalizeActivityCategory(row.querySelector('[data-k="category"]')?.value||"");
   const select=row.querySelector('[data-k="cardDesign"]');
   const option=select?.querySelector('option[value=""]');
-  if(option)option.textContent=category==="Certifications"?"Default — Certificate Card":"Default — Appearance setting";
+  if(option)option.textContent=category==="Certifications"?"Default — Certification Grid":"Default — Appearance setting";
 }
 
 const ACTIVITY_ADMIN_CATEGORIES=["Presentations & Posters","Training & Practical Experience","Certifications","Mentoring & Teaching","Awards & Honors"];
@@ -2105,10 +2106,11 @@ function activityCardStyleSummary(item){
     "activity-split":"Activity Split",
     "activity-showcase":"Activity Showcase",
     "activity-media-fill":"Activity Media Fill",
-    "activity-certificate-full":"Certificate Card"
+    "activity-certificate-full":"Certificate Card",
+    "activity-certificate-grid":"Certification Grid"
   };
   if(explicit)return labels[explicit]||"Custom card";
-  return normalizeActivityCategory(item?.category)==="Certifications"?"Certificate Card (default)":"Appearance default";
+  return normalizeActivityCategory(item?.category)==="Certifications"?"Certification Grid (default)":"Appearance default";
 }
 
 function activitySearchText(item){
