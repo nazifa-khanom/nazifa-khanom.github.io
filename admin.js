@@ -1,3 +1,4 @@
+const $=id=>document.getElementById(id);
 const DEFAULT_CONTENT={
   "name": "Nazifa Khanom",
   "title": "Mechanical Engineering Graduate",
@@ -2066,7 +2067,6 @@ document.addEventListener("change",e=>{
   setStatus("Academic Activities navigation style updated. Save all changes to publish it.");
 });
 
-const $=id=>document.getElementById(id);
 let currentContent=structuredClone(DEFAULT_CONTENT);
 
 function revealAdminUi(){
