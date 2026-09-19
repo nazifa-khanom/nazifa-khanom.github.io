@@ -1,4 +1,5 @@
 const $=id=>document.getElementById(id);
+try{if("scrollRestoration" in history)history.scrollRestoration="manual";}catch(_){}
 const DEFAULT_CONTENT={
   "name": "Nazifa Khanom",
   "title": "Mechanical Engineering Graduate",
@@ -767,6 +768,34 @@ let sitePageModeHashHandler=null;
 let sitePageModeClickBound=false;
 let siteCurrentSectionKey="about";
 
+let initialViewportAligned=false;
+function alignInitialViewportToCurrentSection(d,{force=false}={}){
+  if(initialViewportAligned&&!force)return;
+  initialViewportAligned=true;
+  const run=()=>{
+    try{
+      normalizeSiteSettings(d);
+      const mode=d?.siteSettings?.layout?.navigationMode||"single";
+      if(mode==="sections"){
+        window.scrollTo({top:0,left:0,behavior:"auto"});
+        return;
+      }
+      const key=sectionKeyFromHash();
+      if(key==="about"){
+        window.scrollTo({top:0,left:0,behavior:"auto"});
+        return;
+      }
+      const section=document.querySelector(`.content .section[data-section-key="${key}"]`);
+      if(!section){window.scrollTo({top:0,left:0,behavior:"auto"});return;}
+      const topbar=document.querySelector(".topbar");
+      const offset=(topbar?.offsetHeight||0)+12;
+      const top=section.getBoundingClientRect().top+window.scrollY-offset;
+      window.scrollTo({top:Math.max(0,top),left:0,behavior:"auto"});
+    }catch(_){window.scrollTo({top:0,left:0,behavior:"auto"});}
+  };
+  requestAnimationFrame(()=>requestAnimationFrame(run));
+}
+
 function sectionKeyFromHash(hash=location.hash){
   const raw=String(hash||"").replace(/^#/,"").trim();
   if(!raw||raw==="home")return"about";
@@ -1222,6 +1251,12 @@ function setupProjectMasonryWatchers(){
 
 window.addEventListener("resize",scheduleProjectMasonry,{passive:true});
 window.addEventListener("hashchange",scheduleProjectMasonry);
+window.addEventListener("pageshow",event=>{
+  if(event.persisted&&currentRenderedContent){
+    initialViewportAligned=false;
+    alignInitialViewportToCurrentSection(currentRenderedContent);
+  }
+});
 
 function setupActiveNavigation(d){
   if(d.siteSettings?.layout?.navigationMode==="sections"){
@@ -1797,6 +1832,7 @@ async function loadContent(){
   repairPreGradesheetStateInMemory(data);
   render(normalize(data));
   releaseSiteBoot();
+  alignInitialViewportToCurrentSection(data);
 }
 
 function profileIcon(type){
@@ -2116,6 +2152,10 @@ function render(d){
     $("cvNote").textContent=d.cv.updated_at?`Current CV · updated ${formatDate(d.cv.updated_at)}`:"Current academic CV.";
   }
   applySiteSettings(d);
+  // On a reload, the remembered Courses sub-view is restored before
+  // applySiteSettings() initializes currentRenderedContent. Render the
+  // lazy semester record now that the content context is available.
+  if(educationLocalView==="courses")renderGradesheetLazy(d);
 }
 
 function mediaHtml(media){
@@ -2220,8 +2260,10 @@ if(IS_ADMIN_PREVIEW){
     if(e.origin!==location.origin)return;
     if(e.data?.type!=="academic-site-preview"||!e.data.content)return;
     try{
-      render(normalize(merge(DEFAULT_CONTENT,deepCloneSafe(e.data.content))));
+      const previewContent=normalize(merge(DEFAULT_CONTENT,deepCloneSafe(e.data.content)));
+      render(previewContent);
       releaseSiteBoot();
+      alignInitialViewportToCurrentSection(previewContent);
       notifyAdminPreviewLocation("academic-site-preview-ready");
     }catch(err){console.error("Preview render failed:",err)}
   });
