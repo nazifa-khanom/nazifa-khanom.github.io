@@ -828,7 +828,6 @@ const DEFAULT_SECTION_HEADINGS={
   activities:{title:"Academic Activities",subtitle:"Presentations, training, and recognition"},
   skills:{title:"Skills",subtitle:"Research toolkit"},
   education:{title:"Education",subtitle:"Academic background"},
-  courses:{title:"Courses & Grades",subtitle:"Complete undergraduate academic record"},
   contact:{title:"Contact",subtitle:"Interested in computational materials and nanoscale mechanics?"},
   cv:{title:"Curriculum Vitae",subtitle:"Academic CV"}
 };
@@ -1204,8 +1203,8 @@ function undoTypographyControls(){
   setStatus("Unsaved typography changes were undone.");
 }
 
-const SITE_SECTION_KEYS=["about","research","thesis","publications","projects","activities","skills","education","courses","contact","cv"];
-const COVER_SECTION_KEYS=["research","thesis","publications","projects","activities","skills","education","courses","contact","cv"];
+const SITE_SECTION_KEYS=["about","research","thesis","publications","projects","activities","skills","education","contact","cv"];
+const COVER_SECTION_KEYS=["research","thesis","publications","projects","activities","skills","education","contact","cv"];
 const SIDEBAR_SECTION_KEYS=[...COVER_SECTION_KEYS];
 const CARD_STYLE_SECTION_KEYS=["thesis","publications","projects","activities","skills","education","contact"];
 const CARD_STYLE_VALUES=["classic","clean","outline","soft","accent","elevated"];
@@ -1247,9 +1246,9 @@ function normalizeMainNavStyle(value){
   return LEGACY_MAIN_NAV_STYLE_MAP[value]||"current";
 }
 const DEFAULT_SITE_SETTINGS={
-  sectionOrder:["about","research","thesis","publications","projects","activities","skills","education","courses","contact","cv"],
+  sectionOrder:["about","research","thesis","publications","projects","activities","skills","education","contact","cv"],
   sectionVisibility:{
-    about:true,research:true,thesis:true,publications:true,projects:true,activities:true,skills:true,education:true,courses:true,contact:true,cv:true
+    about:true,research:true,thesis:true,publications:true,projects:true,activities:true,skills:true,education:true,contact:true,cv:true
   },
   layout:{
     maxWidth:1180,
@@ -1279,10 +1278,10 @@ const DEFAULT_SITE_SETTINGS={
     pageTransition:"fade",
     pagePager:true,
     sidebarScope:"home-cv",
-    sidebarSections:{research:false,thesis:false,publications:false,projects:false,activities:false,skills:false,education:false,courses:false,contact:false,cv:true},
+    sidebarSections:{research:false,thesis:false,publications:false,projects:false,activities:false,skills:false,education:false,contact:false,cv:true},
     sectionCoverEnabled:true,
     sectionCoverScope:"research",
-    sectionCoverSections:{research:true,thesis:true,publications:false,projects:false,activities:false,skills:false,education:false,courses:false,contact:false,cv:false},
+    sectionCoverSections:{research:true,thesis:true,publications:false,projects:false,activities:false,skills:false,education:false,contact:false,cv:false},
     sectionCoverStyle:"framed",
     sectionCoverPhotoFit:"crop",
     sectionCoverTopBlend:false,
@@ -1346,15 +1345,13 @@ const SITE_FONT_PAIRS={
 function normalizeSiteSettings(content){
   const raw=(content.siteSettings&&typeof content.siteSettings==="object")?content.siteSettings:{};
   const rawOrder=Array.isArray(raw.sectionOrder)?raw.sectionOrder.filter(x=>SITE_SECTION_KEYS.includes(x)):[];
-  let order=[...new Set([...rawOrder,...SITE_SECTION_KEYS])];
-  const placeMissingAfter=(key,after)=>{
-    if(rawOrder.includes(key))return;
-    order=order.filter(k=>k!==key);
-    const i=order.indexOf(after);
-    order.splice(i>=0?i+1:order.length,0,key);
-  };
-  placeMissingAfter("activities","projects");
-  placeMissingAfter("courses","education");
+  const mergedOrder=[...new Set([...rawOrder,...SITE_SECTION_KEYS])];
+  const order=rawOrder.includes("activities")?mergedOrder:(()=>{
+    const next=mergedOrder.filter(k=>k!=="activities");
+    const projectIndex=next.indexOf("projects");
+    next.splice(projectIndex>=0?projectIndex+1:next.length,0,"activities");
+    return next;
+  })();
   const rawVis=(raw.sectionVisibility&&typeof raw.sectionVisibility==="object")?raw.sectionVisibility:{};
   const l=(raw.layout&&typeof raw.layout==="object")?raw.layout:{};
   const e=(raw.experience&&typeof raw.experience==="object")?raw.experience:{};
@@ -1570,10 +1567,6 @@ function fillSiteCustomizationControls(){
   const educationPresetInput=document.querySelector(`input[name="educationPreset"][value="${educationPreset}"]`);
   if(educationPresetInput)educationPresetInput.checked=true;
   document.querySelectorAll("[data-education-preset-card]").forEach(card=>card.classList.toggle("selected",card.dataset.educationPresetCard===educationPreset));
-  const gradesheetStyle=GRADESHEET_STYLE_VALUES.includes(currentContent.gradesheet?.style)?currentContent.gradesheet.style:"academic-ledger";
-  const gradesheetStyleInput=document.querySelector(`input[name="gradesheetStyle"][value="${gradesheetStyle}"]`);
-  if(gradesheetStyleInput)gradesheetStyleInput.checked=true;
-  document.querySelectorAll("[data-gradesheet-style-card]").forEach(card=>card.classList.toggle("selected",card.dataset.gradesheetStyleCard===gradesheetStyle));
   $("fFontPair").value=l.fontPair;
   $("fShadow").value=l.shadow;
   const cardSection=(CARD_STYLE_SECTION_KEYS.includes($("fCardStyleSection")?.value)?$("fCardStyleSection").value:"skills");
@@ -1998,7 +1991,7 @@ function normalizeMediaDisplayList(value){
   return (Array.isArray(value)?value:[]).map(normalizeMediaDisplayItem);
 }
 
-const BUILDER_SETTINGS_SCHEMA_VERSION=31;
+const BUILDER_SETTINGS_SCHEMA_VERSION=30;
 let savedBuilderSettingsSnapshot=null;
 
 function deepCloneSafe(value){
@@ -2745,19 +2738,6 @@ document.addEventListener("change",e=>{
   setStatus("Header name style updated. Save all changes to publish it.");
 });
 
-
-document.addEventListener("change",e=>{
-  const input=e.target.closest?.('input[name="gradesheetStyle"]');
-  if(!input)return;
-  const value=input.value;
-  if(!GRADESHEET_STYLE_VALUES.includes(value))return;
-  normalizeGradesheet(currentContent);
-  currentContent.gradesheet.style=value;
-  document.querySelectorAll("[data-gradesheet-style-card]").forEach(card=>card.classList.toggle("selected",card.dataset.gradesheetStyleCard===value));
-  scheduleAdminPreview(true);
-  setStatus("Gradesheet listing style updated. Save all changes to publish it.");
-});
-
 document.addEventListener("change",e=>{
   const input=e.target.closest('input[name="educationPreset"]');
   if(!input)return;
@@ -2771,6 +2751,18 @@ document.addEventListener("change",e=>{
   scheduleAdminPreview(true);
   setStatus("Education card preset updated. Save all changes to publish it.");
 });
+
+document.addEventListener("change",event=>{
+  const input=event.target.closest?.('input[name="gradesheetStyle"]');
+  if(!input)return;
+  const value=input.value;
+  if(!GRADESHEET_STYLE_VALUES.includes(value))return;
+  normalizeGradesheet(currentContent);
+  currentContent.gradesheet.style=value;
+  document.querySelectorAll("[data-gradesheet-style-card]").forEach(card=>card.classList.toggle("selected",card.dataset.gradesheetStyleCard===value));
+  scheduleAdminPreview(true);
+});
+
 
 document.addEventListener("change",e=>{
   const input=e.target.closest('input[name="mainNavStyle"]');
@@ -2973,6 +2965,19 @@ function normalizeGradesheet(content){
   return g;
 }
 
+function renderGradesheetAdminState(){
+  const g=normalizeGradesheet(currentContent);
+  const selected=document.querySelector(`input[name="gradesheetStyle"][value="${g.style}"]`);
+  if(selected)selected.checked=true;
+  document.querySelectorAll("[data-gradesheet-style-card]").forEach(card=>card.classList.toggle("selected",card.dataset.gradesheetStyleCard===g.style));
+  if($("currentGradesheetName"))$("currentGradesheetName").textContent=g.filename||(g.url?"External gradesheet link":"No gradesheet PDF uploaded yet.");
+  if($("currentGradesheetDate"))$("currentGradesheetDate").textContent=g.updated_at?`Updated ${new Date(g.updated_at).toLocaleString()}`:"";
+  if($("currentGradesheetLink")&&$("removeGradesheetBtn")){
+    if(g.url){$("currentGradesheetLink").href=g.url;$("currentGradesheetLink").classList.remove("hidden");$("removeGradesheetBtn").classList.remove("hidden");}
+    else{$("currentGradesheetLink").classList.add("hidden");$("removeGradesheetBtn").classList.add("hidden");}
+  }
+}
+
 function normalizeMedia(content){
   normalizeAcademicArchitecture(content);
   normalizeResearchInterests(content);
@@ -3048,8 +3053,6 @@ function fillForms(){
   $("fSectionSkillsSubtitle").value=sections.skills.subtitle||"";
   $("fSectionEducationTitle").value=sections.education.title||"";
   $("fSectionEducationSubtitle").value=sections.education.subtitle||"";
-  $("fSectionCoursesTitle").value=sections.courses.title||"";
-  $("fSectionCoursesSubtitle").value=sections.courses.subtitle||"";
   $("fSectionContactTitle").value=sections.contact.title||"";
   $("fContactHeadline").value=sections.contact.subtitle||"";
   $("fSectionCvTitle").value=sections.cv.title||"";
@@ -3092,7 +3095,7 @@ function fillForms(){
   }
   renderAllEditors();
   renderCvState();
-  renderGradesheetState();
+  renderGradesheetAdminState();
   fillThemeChooser();
   fillTypographyControls();
   fillCustomThemeControls();
@@ -3729,14 +3732,6 @@ function mediaEditor(owner,media,title){
   </div>`;
 }
 
-function renderGradesheetState(){
-  const g=normalizeGradesheet(currentContent);
-  $("currentGradesheetName").textContent=g.filename||(g.url?"External gradesheet link":"No gradesheet PDF uploaded yet.");
-  $("currentGradesheetDate").textContent=g.updated_at?`Updated ${new Date(g.updated_at).toLocaleString()}`:"";
-  if(g.url){$("currentGradesheetLink").href=g.url;$("currentGradesheetLink").classList.remove("hidden");$("removeGradesheetBtn").classList.remove("hidden");}
-  else{$("currentGradesheetLink").classList.add("hidden");$("removeGradesheetBtn").classList.add("hidden");}
-}
-
 function renderCvState(){
   const cv=currentContent.cv||{};
   $("currentCvName").textContent=cv.filename||(cv.url?"External CV link":"No CV uploaded yet.");
@@ -3994,7 +3989,6 @@ function syncAllForms(){
     activities:{title:$("fSectionActivitiesTitle").value.trim(),subtitle:$("fSectionActivitiesSubtitle").value.trim()},
     skills:{title:$("fSectionSkillsTitle").value.trim(),subtitle:$("fSectionSkillsSubtitle").value.trim()},
     education:{title:$("fSectionEducationTitle").value.trim(),subtitle:$("fSectionEducationSubtitle").value.trim()},
-    courses:{title:$("fSectionCoursesTitle").value.trim(),subtitle:$("fSectionCoursesSubtitle").value.trim()},
     contact:{title:$("fSectionContactTitle").value.trim(),subtitle:$("fContactHeadline").value.trim()},
     cv:{title:$("fSectionCvTitle").value.trim(),subtitle:$("fSectionCvSubtitle").value.trim()}
   };
@@ -4851,7 +4845,7 @@ $("removeGradesheetBtn").addEventListener("click",async()=>{
   normalizeGradesheet(currentContent);
   currentContent.gradesheet={...currentContent.gradesheet,url:"",filename:"",updated_at:""};
   const ok=await persistContent("Gradesheet removed.");
-  if(ok)renderGradesheetState();
+  if(ok)renderGradesheetAdminState();
 });
 
 $("removeCvBtn").addEventListener("click",async()=>{
@@ -4922,7 +4916,7 @@ async function saveAll(){
     $("photoPreview").classList.remove("hidden");
   }
   renderCvState();
-  renderGradesheetState();
+  renderGradesheetAdminState();
   typographySavedSnapshot=typographyStateFromContent();
   updateTypographyUndoButton();
 }
