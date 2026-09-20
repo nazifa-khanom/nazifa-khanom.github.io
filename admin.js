@@ -2158,6 +2158,7 @@ async function boot(){
 }
 
 function showLogin(){
+  visualEditorAuthReady=false;
   $("loginView")?.classList.remove("hidden");
   $("adminView")?.classList.add("hidden");
 }
@@ -2177,7 +2178,10 @@ async function verifyAdminAndOpen(){
   await loadContent();
   $("loginView")?.classList.add("hidden");
   $("adminView")?.classList.remove("hidden");
+  visualEditorAuthReady=true;
+  initVisualEditor();
   revealAdminUi();
+  if(document.querySelector('[data-panel="visual"]')?.classList.contains("active"))setTimeout(startVisualEditor,0);
 }
 
 async function handleAdminLogin(event){
@@ -5010,6 +5014,9 @@ document.querySelectorAll('[data-sidebar-fold]').forEach(fold=>{
    This interface intentionally shares currentContent, history, saveAll(),
    fillForms(), and every existing Admin panel with the form editor.
    ========================================================= */
+let visualEditorAuthReady=false;
+let visualEditorInitialized=false;
+
 const VISUAL_EDITOR_PANEL_KEYS=["profile","research","thesis","publications","projects","activities","skills","education","contact","cv","appearance","navigation","sidebar","typography","layout","structure","cover","experience","history","backup"];
 const VISUAL_EDITOR_VIEWPORTS={
   desktop:{width:1280,height:800,label:"Desktop · 1280 × 800"},
@@ -5027,7 +5034,10 @@ let visualDragPayload=null;
 let visualFramePreparedFor=null;
 let visualDirty=false;
 
-function visualEditorIsActive(){return document.querySelector('[data-panel="visual"]')?.classList.contains("active")}
+function visualEditorIsActive(){
+  const admin=$("adminView");
+  return visualEditorAuthReady&&!!admin&&!admin.classList.contains("hidden")&&document.querySelector('[data-panel="visual"]')?.classList.contains("active");
+}
 function visualFrame(){return $("visualEditorFrame")}
 function visualSetStatus(message,{dirty}={}){
   if($("visualEditorStatus"))$("visualEditorStatus").textContent=message||"Ready.";
@@ -5389,7 +5399,9 @@ function startVisualEditor(){
 function stopVisualEditor(){visualReturnDockedPanel()}
 
 function initVisualEditor(){
+  if(!visualEditorAuthReady||visualEditorInitialized)return;
   const frame=visualFrame();if(!frame)return;
+  visualEditorInitialized=true;
   frame.addEventListener("load",()=>{if(!visualEditorIsActive())return;applyVisualEditorViewport(visualEditorDevice);setTimeout(()=>sendVisualEditorContent(),30)});
   window.addEventListener("resize",()=>{if(visualEditorIsActive())applyVisualEditorViewport(visualEditorDevice)});
   window.addEventListener("message",e=>{
@@ -5449,5 +5461,4 @@ function initVisualEditor(){
   if(visualEditorIsActive())startVisualEditor();
 }
 
-/* Initialize after the rest of Admin has bound its controls. */
-setTimeout(initVisualEditor,0);
+/* Visual Editor is initialized only after authenticated Admin content has loaded. */
