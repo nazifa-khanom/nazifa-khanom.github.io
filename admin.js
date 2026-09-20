@@ -519,7 +519,7 @@ const CARD_DESIGN_VALUES=["standard","editorial","banded","ledger","spotlight","
 const ACTIVITY_TAB_STYLE_VALUES=["strong-pills", "segmented", "elevated", "outline-fill", "underline-fill", "soft-cards", "icon-label", "two-tone", "glass", "ribbon"];
 const EDUCATION_PRESET_VALUES=["current","scholar-highlight","compact-timeline","split-panel","metric-grid","academic-profile","certificate-showcase","banner-spotlight","transcript-ledger","three-column-digest","minimal-chronicle"];
 const GRADESHEET_STYLE_VALUES=["official-transcript","semester-cards","academic-ledger","performance-grid","minimal-scholar","compact-register","semester-timeline","scholar-panels","accent-journal","executive-record"];
-const PRE_GRADE_SITE_SETTINGS={"layout":{"shadow":"subtle","fontPair":"palatino","maxWidth":1180,"layoutGap":40,"pagePager":true,"cardRadius":8,"cardStyles":{"thesis":"classic","publications":"classic","projects":"classic","activities":"classic","skills":"classic","education":"classic","contact":"classic"},"cardDesigns":{"thesis":"banded","publications":"standard","projects":"standard","activities":"activity-media-fill","skills":"standard","education":"standard","contact":"standard"},"portraitFit":"cover","projectFlow":"masonry","portraitSize":240,"sidebarScope":"home-cv","sidebarStyle":"current","sidebarWidth":230,"portraitShape":"slight","sidebarDesign":"current","sidebarLayout":"classic","skillsColumns":3,"stickySidebar":true,"navigationMode":"sections","pageTransition":"fade","projectColumns":2,"sectionSpacing":24,"activityColumns":1,"sectionCoverGap":0,"sidebarPosition":"left","sidebarSections":{"research":false,"thesis":false,"publications":false,"projects":false,"activities":false,"skills":false,"education":false,"contact":false,"cv":true},"portraitPosition":"center","sectionCoverFade":"medium","sectionCoverSide":"right","sectionCoverZoom":100,"sectionCoverScope":"research","sectionCoverStyle":"fullbleed","sectionCoverHeight":300,"sectionCoverDetails":true,"sectionCoverEnabled":true,"sectionCoverSocials":true,"sectionCoverPhotoFit":"crop","sectionCoverSections":{"research":true,"thesis":true,"publications":false,"projects":false,"activities":false,"skills":false,"education":false,"contact":false,"cv":false},"sectionCoverTopBlend":false,"educationPreset":"current"},"experience":{"lightbox":true,"activeNav":true,"backToTop":true,"animations":"off","copyButtons":true,"socialStyle":"icons","mainNavStyle":"glass-rail","smoothScroll":true,"brandNameSize":22,"brandNameColor":"","brandNameStyle":"current","activityTabStyle":"icon-label","hoverInteractions":"subtle","navHighlightStyle":"pill"},"sectionOrder":["about","research","thesis","publications","projects","activities","skills","education","contact","cv"],"sectionVisibility":{"about":true,"research":true,"thesis":true,"publications":true,"projects":true,"activities":true,"skills":true,"education":true,"contact":true,"cv":true},"thesisDefaultVisibleApplied":true,"experienceDefaultsMigratedV1":true};
+const PRE_GRADE_SITE_SETTINGS={"layout":{"shadow":"subtle","fontPair":"palatino","maxWidth":1180,"layoutGap":40,"pagePager":true,"cardRadius":8,"cardStyles":{"thesis":"classic","publications":"classic","projects":"classic","activities":"classic","skills":"classic","education":"classic","contact":"classic"},"cardDesigns":{"thesis":"banded","publications":"standard","projects":"standard","activities":"activity-media-fill","skills":"standard","education":"standard","contact":"standard"},"portraitFit":"cover","projectFlow":"masonry","portraitSize":240,"sidebarScope":"home-cv","sidebarStyle":"current","sidebarWidth":230,"portraitShape":"slight","sidebarDesign":"current","sidebarLayout":"classic","skillsColumns":3,"stickySidebar":true,"navigationMode":"sections","pageTransition":"fade","projectColumns":2,"sectionSpacing":24,"activityColumns":1,"sectionCoverGap":0,"sidebarPosition":"left","sidebarSections":{"research":false,"thesis":false,"publications":false,"projects":false,"activities":false,"skills":false,"education":false,"contact":false,"cv":true},"portraitPosition":"center","sectionCoverFade":"medium","sectionCoverSide":"right","sectionCoverZoom":100,"sectionCoverScope":"research","sectionCoverStyle":"fullbleed","sectionCoverHeight":300,"sectionCoverDetails":true,"sectionCoverEnabled":true,"sectionCoverSocials":true,"sectionCoverPhotoFit":"crop","sectionCoverSections":{"research":true,"thesis":true,"publications":false,"projects":false,"activities":false,"skills":false,"education":false,"contact":false,"cv":false},"sectionCoverTopBlend":false,"educationPreset":"current"},"experience":{"lightbox":true,"activeNav":true,"backToTop":true,"animations":"off","copyButtons":true,"socialStyle":"icons","mainNavStyle":"glass-rail","smoothScroll":true,"brandNameSize":22,"brandNameColor":"","brandNameStyle":"current","activityTabStyle":"icon-label","educationTabStyle":"icon-label","hoverInteractions":"subtle","navHighlightStyle":"pill"},"sectionOrder":["about","research","thesis","publications","projects","activities","skills","education","contact","cv"],"sectionVisibility":{"about":true,"research":true,"thesis":true,"publications":true,"projects":true,"activities":true,"skills":true,"education":true,"contact":true,"cv":true},"thesisDefaultVisibleApplied":true,"experienceDefaultsMigratedV1":true};
 const MAIN_NAV_STYLE_VALUES=["current","framed-links","accent-pills","floating-capsule","segmented-strip","top-rail","mini-cards","soft-chips","editorial-dividers","glass-rail","ribbon-blocks"];
 const BRAND_NAME_STYLE_VALUES=["current","accent-rail","signature-underline","soft-badge","outline-label","capsule","editorial-serif","small-caps","split-rule","accent-corner","glass-label"];
 const SIDEBAR_DESIGN_VALUES=["current","profile-card","editorial-sidebar","accent-rail","soft-tint-panel","floating-profile","portrait-header","centered-academic","split-portrait","framed-portrait","minimal-identity","academic-id","researcher-badge","top-accent-banner","overlap-portrait","asymmetric-editorial","compact-sticky","sectioned-sidebar","glass-academic","faculty-premium"];
@@ -612,6 +612,7 @@ const DEFAULT_SITE_SETTINGS={
     navHighlightStyle:"underline",
     socialStyle:"labels",
     activityTabStyle:"strong-pills",
+    educationTabStyle:"strong-pills",
     mainNavStyle:"current",
     brandNameSize:18,
     brandNameColor:"",
@@ -741,6 +742,7 @@ function normalizeSiteSettings(content){
       navHighlightStyle:["underline","pill","text"].includes(e.navHighlightStyle)?e.navHighlightStyle:DEFAULT_SITE_SETTINGS.experience.navHighlightStyle,
       socialStyle:["labels","icons"].includes(e.socialStyle)?e.socialStyle:DEFAULT_SITE_SETTINGS.experience.socialStyle,
       activityTabStyle:ACTIVITY_TAB_STYLE_VALUES.includes(e.activityTabStyle)?e.activityTabStyle:DEFAULT_SITE_SETTINGS.experience.activityTabStyle,
+      educationTabStyle:ACTIVITY_TAB_STYLE_VALUES.includes(e.educationTabStyle)?e.educationTabStyle:(ACTIVITY_TAB_STYLE_VALUES.includes(e.activityTabStyle)?e.activityTabStyle:DEFAULT_SITE_SETTINGS.experience.educationTabStyle),
       mainNavStyle:normalizeMainNavStyle(e.mainNavStyle),
       brandNameSize:clampNumber(e.brandNameSize,14,32,DEFAULT_SITE_SETTINGS.experience.brandNameSize),
       brandNameColor:validHex(e.brandNameColor)?e.brandNameColor.toUpperCase():"",
@@ -931,6 +933,10 @@ function fillSiteCustomizationControls(){
   const activityTabInput=document.querySelector(`input[name="activityTabStyle"][value="${activityTabStyle}"]`);
   if(activityTabInput)activityTabInput.checked=true;
   document.querySelectorAll("[data-activity-tab-style-card]").forEach(card=>card.classList.toggle("selected",card.dataset.activityTabStyleCard===activityTabStyle));
+  const educationTabStyle=ACTIVITY_TAB_STYLE_VALUES.includes(e.educationTabStyle)?e.educationTabStyle:activityTabStyle;
+  const educationTabInput=document.querySelector(`input[name="educationTabStyle"][value="${educationTabStyle}"]`);
+  if(educationTabInput)educationTabInput.checked=true;
+  document.querySelectorAll("[data-education-tab-style-card]").forEach(card=>card.classList.toggle("selected",card.dataset.educationTabStyleCard===educationTabStyle));
   const mainNavStyle=normalizeMainNavStyle(e.mainNavStyle);
   const mainNavInput=document.querySelector(`input[name="mainNavStyle"][value="${mainNavStyle}"]`);
   if(mainNavInput)mainNavInput.checked=true;
@@ -1086,6 +1092,8 @@ function syncSiteCustomizationFromControls(){
   e.socialStyle=$("fSocialStyle").value;
   const activityTabStyle=document.querySelector('input[name="activityTabStyle"]:checked')?.value;
   if(ACTIVITY_TAB_STYLE_VALUES.includes(activityTabStyle))e.activityTabStyle=activityTabStyle;
+  const educationTabStyle=document.querySelector('input[name="educationTabStyle"]:checked')?.value;
+  if(ACTIVITY_TAB_STYLE_VALUES.includes(educationTabStyle))e.educationTabStyle=educationTabStyle;
   const mainNavStyle=document.querySelector('input[name="mainNavStyle"]:checked')?.value;
   if(MAIN_NAV_STYLE_VALUES.includes(mainNavStyle))e.mainNavStyle=mainNavStyle;
   e.brandNameSize=clampNumber($("fBrandNameSizeNumber")?.value||$("fBrandNameSize")?.value,14,32,18);
@@ -2067,7 +2075,7 @@ document.addEventListener("change",e=>{
   setCourseRecordSettings(currentContent,{style:input.value});
   document.querySelectorAll("[data-gradesheet-style-card]").forEach(card=>card.classList.toggle("selected",card.dataset.gradesheetStyleCard===input.value));
   scheduleAdminPreview(true);
-  setStatus("Courses & grades style updated. Save all changes to publish it.");
+  setStatus("Gradesheet listing style updated. Save all changes to publish it.");
 });
 
 document.addEventListener("change",e=>{
@@ -2100,6 +2108,23 @@ document.addEventListener("change",e=>{
   renderDesignPresets();
   scheduleAdminPreview(true);
   setStatus("Academic Activities navigation style updated. Save all changes to publish it.");
+});
+
+/* Education subsection-navigation style — mirrors the complete Academic
+   Activities navigation library but saves independently. */
+document.addEventListener("change",e=>{
+  const input=e.target.closest('input[name="educationTabStyle"]');
+  if(!input)return;
+  const value=input.value;
+  if(!ACTIVITY_TAB_STYLE_VALUES.includes(value))return;
+  normalizeSiteSettings(currentContent);
+  currentContent.siteSettings.experience.educationTabStyle=value;
+  currentContent.appearance=currentContent.appearance||{};
+  currentContent.appearance.designPreset="custom";
+  document.querySelectorAll("[data-education-tab-style-card]").forEach(card=>card.classList.toggle("selected",card.dataset.educationTabStyleCard===value));
+  renderDesignPresets();
+  scheduleAdminPreview(true);
+  setStatus("Education subsection navigation style updated. Save all changes to publish it.");
 });
 
 let currentContent=structuredClone(DEFAULT_CONTENT);
